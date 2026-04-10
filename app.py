@@ -103,6 +103,28 @@ def pagar_parcela(id):
     flash(f'Parcela {parcela.numero} de {parcela.cliente.nome} marcada como paga.', 'success')
     return redirect(url_for('index'))
 
+# --- 🆕 NOVA ROTA: API DE LEMBRETES (COLOQUE AQUI) ---
+@app.route('/api/lembretes')
+def api_lembretes():
+    hoje = datetime.now().date()
+    limite = hoje + timedelta(days=5)
+    parcelas = Parcela.query.filter(
+        Parcela.data_vencimento.between(hoje, limite),
+        Parcela.pago == False
+    ).all()
+    
+    resultado = []
+    for p in parcelas:
+        resultado.append({
+            'cliente': p.cliente.nome,
+            'carro': p.cliente.carro,
+            'parcela': p.numero,
+            'valor': f"R$ {p.valor:.2f}",
+            'dias': (p.data_vencimento - hoje).days,
+            'telefone': p.cliente.telefone
+        })
+    return {'lembretes': resultado}
+
 # --- FUNÇÃO DE VERIFICAÇÃO DIÁRIA ---
 def verificar_lembretes():
     with app.app_context():
