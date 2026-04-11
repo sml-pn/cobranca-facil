@@ -1,4 +1,5 @@
 import os
+import sys
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
@@ -9,22 +10,31 @@ import atexit
 app = Flask(__name__)
 app.secret_key = 'sua-chave-secreta-aqui-mude-para-algo-seguro'
 
-# --- CONFIGURAÇÃO DO BANCO DE DADOS ---
+# --- CONFIGURAÇÃO INTELIGENTE DO BANCO DE DADOS ---
+# Tenta obter a URL do banco a partir da variável de ambiente (Render)
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Produção (Render) -> PostgreSQL
+    # Se estiver usando PostgreSQL, força o uso do driver psycopg3
     if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+    elif DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 else:
-    # Desenvolvimento local -> SQLite
+    # Fallback para SQLite local (desenvolvimento)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cobranca.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Opções para manter conexões saudáveis no PostgreSQL
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,   # Verifica se a conexão está ativa antes de usar
+    'pool_recycle': 300,     # Recicla conexões a cada 5 minutos
+}
+
 db = SQLAlchemy(app)
 
-# --- MODELOS ---
+# --- MODELOS (TABELAS) ---
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -103,7 +113,7 @@ def pagar_parcela(id):
     flash(f'Parcela {parcela.numero} de {parcela.cliente.nome} marcada como paga.', 'success')
     return redirect(url_for('index'))
 
-# --- 🆕 NOVA ROTA: API DE LEMBRETES (COLOQUE AQUI) ---
+# --- API DE LEMBRETES (usada pelas notificações frontend) ---
 @app.route('/api/lembretes')
 def api_lembretes():
     hoje = datetime.now().date()
@@ -125,7 +135,7 @@ def api_lembretes():
         })
     return {'lembretes': resultado}
 
-# --- FUNÇÃO DE VERIFICAÇÃO DIÁRIA ---
+# --- FUNÇÃO DE VERIFICAÇÃO DIÁRIA (executada pelo agendador) ---
 def verificar_lembretes():
     with app.app_context():
         hoje = datetime.now().date()
@@ -145,7 +155,7 @@ def verificar_lembretes():
         else:
             print("Nenhum lembrete para hoje.")
 
-# --- AGENDADOR (executa diariamente às 8:00 UTC = 5:00 horário de Brasília) ---
+# --- AGENDADOR (roda diariamente às 8:00 UTC = 5:00 BRT) ---
 scheduler = BackgroundScheduler(timezone='UTC')
 scheduler.add_job(
     func=verificar_lembretes,
