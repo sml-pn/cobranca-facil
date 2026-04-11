@@ -15,6 +15,9 @@
     <meta name="apple-mobile-web-app-title" content="Cobrança Auto">
     <meta name="theme-color" content="#1e3c72">
     
+    <!-- Splash Screen iOS -->
+    <link rel="apple-touch-startup-image" href="/static/apple-icon-180x180.png">
+    
     <!-- Ícones iOS -->
     <link rel="apple-touch-icon" href="/static/apple-icon-57x57.png">
     <link rel="apple-touch-icon" sizes="72x72" href="/static/apple-icon-72x72.png">
@@ -28,329 +31,49 @@
     <link rel="shortcut icon" href="/static/favicon.ico">
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
-        }
-        body {
-            background: #f4f7fc;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .header {
-            background: #1e3c72;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 1rem 1.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        .header h1 {
-            font-size: 1.6rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header h1 i {
-            font-size: 1.8rem;
-        }
-        .nav-bar {
-            background: white;
-            padding: 0.6rem 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.8rem 1.5rem;
-            border-bottom: 1px solid #e0e7ef;
-        }
-        .nav-bar a {
-            color: #2c3e50;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 0.5rem 0;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 1rem;
-        }
-        .nav-bar a i {
-            width: 1.2rem;
-            color: #2a5298;
-        }
-        .nav-bar a:hover {
-            color: #1e3c72;
-            border-bottom-color: #1e3c72;
-        }
-        .main-content {
-            flex: 1;
-            padding: 1.5rem;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-        }
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.05);
-            border: 1px solid rgba(0,0,0,0.03);
-        }
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .card-header h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .btn {
-            background: #2a5298;
-            color: white;
-            border: none;
-            padding: 0.7rem 1.5rem;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: 0.2s;
-            box-shadow: 0 4px 8px rgba(42,82,152,0.2);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .btn i {
-            font-size: 1rem;
-        }
-        .btn:hover {
-            background: #1e3c72;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 12px rgba(30,60,114,0.25);
-        }
-        .btn-outline {
-            background: transparent;
-            color: #2a5298;
-            box-shadow: none;
-            border: 1.5px solid #2a5298;
-        }
-        .btn-outline:hover {
-            background: #eef3fc;
-        }
-        .btn-success {
-            background: #28a745;
-            box-shadow: 0 4px 8px rgba(40,167,69,0.2);
-        }
-        .btn-success:hover {
-            background: #218838;
-        }
-        .flash {
-            padding: 1rem 1.5rem;
-            border-radius: 50px;
-            margin-bottom: 1.5rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideDown 0.3s ease;
-        }
-        .flash.success {
-            background: #d4edda;
-            color: #155724;
-            border-left: 6px solid #28a745;
-        }
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .table-wrapper {
-            overflow-x: auto;
-            margin: 1rem 0;
-            border-radius: 12px;
-            border: 1px solid #edf2f7;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 600px;
-        }
-        th {
-            background: #f8fafc;
-            padding: 1rem;
-            text-align: left;
-            font-weight: 600;
-            color: #1e293b;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid #e2e8f0;
-            color: #334155;
-        }
-        tr:last-child td {
-            border-bottom: none;
-        }
-        tr:hover td {
-            background: #fafbff;
-        }
-        .parcela-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .parcela-item {
-            background: white;
-            border-radius: 16px;
-            padding: 1.2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-            border: 1px solid #eef2f6;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            transition: 0.2s;
-        }
-        .parcela-item:hover {
-            box-shadow: 0 6px 14px rgba(0,0,0,0.05);
-        }
-        .parcela-info {
-            flex: 2 1 200px;
-        }
-        .parcela-info h3 {
-            font-size: 1.2rem;
-            color: #0b1e33;
-            margin-bottom: 5px;
-        }
-        .parcela-detail {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.8rem 2rem;
-            margin-top: 8px;
-            color: #475569;
-        }
-        .parcela-detail i {
-            width: 1.2rem;
-            color: #2a5298;
-        }
-        .parcela-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .badge {
-            background: #e2e8f0;
-            padding: 0.3rem 1rem;
-            border-radius: 30px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #1e293b;
-        }
-        .badge.success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        .badge.warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        label {
-            font-weight: 600;
-            color: #1e293b;
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-        input, select {
-            width: 100%;
-            padding: 0.9rem 1rem;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: 0.2s;
-            background: white;
-        }
-        input:focus, select:focus {
-            border-color: #2a5298;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(42,82,152,0.15);
-        }
-        .form-actions {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-top: 2rem;
-        }
-        .footer {
-            text-align: center;
-            padding: 1.5rem;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-            margin-top: auto;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background: #f4f7fc; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 1rem 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10; }
+        .header h1 { font-size: 1.6rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .nav-bar { background: white; padding: 0.6rem 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 0.8rem 1.5rem; border-bottom: 1px solid #e0e7ef; }
+        .nav-bar a { color: #2c3e50; text-decoration: none; font-weight: 500; padding: 0.5rem 0; border-bottom: 3px solid transparent; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .nav-bar a i { width: 1.2rem; color: #2a5298; }
+        .nav-bar a:hover { color: #1e3c72; border-bottom-color: #1e3c72; }
+        .main-content { flex: 1; padding: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .card { background: white; border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 6px 18px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px; }
+        .card-header h2 { font-size: 1.5rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .btn { background: #2a5298; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 40px; font-weight: 600; font-size: 0.95rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 8px rgba(42,82,152,0.2); }
+        .btn:hover { background: #1e3c72; transform: translateY(-1px); }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        .btn-outline { background: transparent; color: #2a5298; box-shadow: none; border: 1.5px solid #2a5298; }
+        .flash { padding: 1rem 1.5rem; border-radius: 50px; margin-bottom: 1.5rem; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+        .flash.success { background: #d4edda; color: #155724; border-left: 6px solid #28a745; }
+        .table-wrapper { overflow-x: auto; margin: 1rem 0; border-radius: 12px; border: 1px solid #edf2f7; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #f8fafc; padding: 1rem; text-align: left; font-weight: 600; color: #1e293b; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 1rem; border-bottom: 1px solid #e2e8f0; color: #334155; }
+        tr:hover td { background: #fafbff; }
+        .parcela-list { display: flex; flex-direction: column; gap: 1rem; }
+        .parcela-item { background: white; border-radius: 16px; padding: 1.2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid #eef2f6; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+        .parcela-info h3 { font-size: 1.2rem; color: #0b1e33; margin-bottom: 5px; }
+        .parcela-detail { display: flex; flex-wrap: wrap; gap: 0.8rem 2rem; margin-top: 8px; color: #475569; }
+        .parcela-detail i { width: 1.2rem; color: #2a5298; }
+        .parcela-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .badge { background: #e2e8f0; padding: 0.3rem 1rem; border-radius: 30px; font-size: 0.8rem; font-weight: 600; }
+        .badge.success { background: #d1fae5; color: #065f46; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { font-weight: 600; color: #1e293b; display: block; margin-bottom: 0.5rem; }
+        input, select { width: 100%; padding: 0.9rem 1rem; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 1rem; background: white; }
+        input:focus, select:focus { border-color: #2a5298; outline: none; box-shadow: 0 0 0 3px rgba(42,82,152,0.15); }
+        .form-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+        .footer { text-align: center; padding: 1.5rem; color: #64748b; border-top: 1px solid #e2e8f0; margin-top: auto; }
         @media (max-width: 600px) {
             .header h1 { font-size: 1.3rem; }
             .nav-bar { padding: 0.5rem 1rem; }
             .main-content { padding: 1rem; }
-            .card { padding: 1.2rem; }
             .parcela-item { flex-direction: column; align-items: flex-start; }
-            .parcela-actions { width: 100%; justify-content: flex-end; }
-        }
-
-        /* Botão fixo flutuante de instalação */
-        .install-floating-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #28a745;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 50px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-            z-index: 9999;
-            display: none;
-            align-items: center;
-            gap: 10px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .install-floating-btn i {
-            font-size: 1.3rem;
-        }
-        .install-floating-btn:hover {
-            transform: scale(1.05);
-            background: #218838;
-        }
-        .install-floating-btn .close-btn {
-            background: rgba(255,255,255,0.2);
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 5px;
-            cursor: pointer;
         }
     </style>
     {% block extra_head %}{% endblock %}
@@ -377,7 +100,6 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-
         {% block content %}{% endblock %}
     </main>
 
@@ -385,123 +107,70 @@
         <p>&copy; {{ now.year }} Cobrança Auto Fácil – Lembretes inteligentes para seu negócio</p>
     </footer>
 
-    <!-- Botão fixo flutuante para instalação -->
-    <button class="install-floating-btn" id="floatingInstallBtn">
-        <i class="fas fa-download"></i>
-        <span>Instalar App</span>
-        <span class="close-btn" id="closeFloatingBtn">&times;</span>
-    </button>
+    <!-- Botão de Ajuda para Instalação -->
+    <div id="installHelpButton" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
+        <button onclick="showInstallGuide()" style="background: #1e3c72; color: white; border: none; padding: 12px 20px; border-radius: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: bold; cursor: pointer;">
+            ⬇️ Como baixar o App
+        </button>
+    </div>
 
     <script>
-        // 1. REGISTRO DO SERVICE WORKER (para notificações push)
+        // Exibir botão apenas em dispositivos móveis
+        if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            document.getElementById('installHelpButton').style.display = 'block';
+        }
+
+        function showInstallGuide() {
+            let message = "";
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                message = "📱 Para instalar no iPhone/iPad:\n\n1. Toque no ícone 'Compartilhar' (quadrado com seta) na barra inferior do Safari.\n2. Role e toque em 'Adicionar à Tela de Início'.\n3. Confirme tocando em 'Adicionar'.";
+            } else if (/Android/i.test(navigator.userAgent)) {
+                message = "📱 Para instalar no Android:\n\n1. Toque no menu (três pontinhos) do Chrome.\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'.\n3. Confirme a instalação.";
+            } else {
+                message = "💻 No PC: Clique no ícone de instalação (monitor com seta) na barra de endereço do Chrome/Edge.";
+            }
+            alert(message);
+        }
+
+        // Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/static/sw.js')
-                    .then(reg => console.log('✅ Service Worker registrado'))
-                    .catch(err => console.log('❌ Erro SW:', err));
+                    .then(reg => console.log('Service Worker registrado!'))
+                    .catch(err => console.log('Erro no SW:', err));
             });
         }
 
-        // 2. SOLICITAÇÃO DE PERMISSÃO PARA NOTIFICAÇÕES (pop-up do sistema)
-        if ('Notification' in window && Notification.permission === 'default') {
-            setTimeout(() => {
-                Notification.requestPermission();
-            }, 3000);
+        // Notificações
+        if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            setTimeout(() => Notification.requestPermission(), 3000);
         }
 
-        // 3. VERIFICAÇÃO DE LEMBRETES (Push)
-        async function verificarLembretesENotificar() {
-            if (Notification.permission !== 'granted') return;
-            try {
-                const response = await fetch('/api/lembretes');
-                const data = await response.json();
-                if (data.lembretes && data.lembretes.length > 0) {
-                    data.lembretes.forEach(item => {
-                        navigator.serviceWorker.ready.then(reg => {
-                            reg.showNotification('🔔 Cobrança Auto Fácil', {
-                                body: `${item.cliente} - Parcela ${item.parcela} vence em ${item.dias} dias. ${item.valor}`,
-                                icon: '/static/android-icon-192x192.png',
-                                badge: '/static/favicon-96x96.png',
-                                vibrate: [200, 100, 200],
-                                tag: `parcela-${item.cliente}-${item.parcela}`,
-                                renotify: true
-                            });
+        function verificarLembretesENotificar() {
+            fetch('/api/lembretes')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.lembretes && data.lembretes.length > 0) {
+                        data.lembretes.forEach(item => {
+                            if (Notification.permission === 'granted') {
+                                navigator.serviceWorker.ready.then(reg => {
+                                    reg.showNotification('🔔 Cobrança Auto Fácil', {
+                                        body: `${item.cliente} - Parcela ${item.parcela} vence em ${item.dias} dias. ${item.valor}`,
+                                        icon: '/static/android-icon-192x192.png',
+                                        badge: '/static/favicon-96x96.png',
+                                        vibrate: [200, 100, 200],
+                                        tag: `parcela-${item.cliente}-${item.parcela}`,
+                                        renotify: true
+                                    });
+                                });
+                            }
                         });
-                    });
-                }
-            } catch (e) {
-                console.log('Erro ao buscar lembretes:', e);
-            }
+                    }
+                }).catch(err => console.log('Erro:', err));
         }
-        window.addEventListener('load', () => { setTimeout(verificarLembretesENotificar, 5000); });
+
+        window.addEventListener('load', () => setTimeout(verificarLembretesENotificar, 5000));
         setInterval(verificarLembretesENotificar, 30 * 60 * 1000);
-
-        // 4. LÓGICA DO BOTÃO FLUTUANTE DE INSTALAÇÃO
-        let deferredPrompt;
-        const floatBtn = document.getElementById('floatingInstallBtn');
-        const closeBtn = document.getElementById('closeFloatingBtn');
-
-        // Função para verificar se o app já está instalado
-        function isAppInstalled() {
-            return window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone === true;
-        }
-
-        // Captura o evento de instalação (Chrome/Edge)
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            if (!isAppInstalled()) {
-                floatBtn.style.display = 'flex';
-            }
-            console.log('✅ beforeinstallprompt capturado, botão flutuante exibido');
-        });
-
-        // Fallback: se após 3 segundos o evento não foi disparado, mostra o botão de qualquer forma
-        setTimeout(() => {
-            if (!deferredPrompt && !isAppInstalled()) {
-                floatBtn.style.display = 'flex';
-                console.log('⚠️ Fallback: botão flutuante exibido sem beforeinstallprompt');
-            }
-        }, 3000);
-
-        // Ao clicar no botão flutuante
-        floatBtn.addEventListener('click', async (e) => {
-            // Se clicar no "X", não faz a instalação
-            if (e.target.classList.contains('close-btn')) return;
-            
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`Resultado da instalação: ${outcome}`);
-                deferredPrompt = null;
-                floatBtn.style.display = 'none';
-            } else {
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                if (isIOS) {
-                    alert('📱 No iPhone/iPad, toque em "Compartilhar" (ícone do quadrado com seta) e depois em "Adicionar à Tela de Início".');
-                } else {
-                    alert('💻 Para instalar o app:\n\n• Chrome PC: Menu (três pontinhos) → "Instalar Cobrança Auto Fácil..."\n• Android: Menu → "Instalar aplicativo"\n\nSe a opção não aparecer, recarregue a página ou limpe o cache.');
-                }
-            }
-        });
-
-        // Fechar o botão flutuante
-        closeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            floatBtn.style.display = 'none';
-        });
-
-        // Se o app for instalado, esconde o botão
-        window.addEventListener('appinstalled', () => {
-            floatBtn.style.display = 'none';
-            console.log('🎉 App instalado com sucesso!');
-        });
-
-        // Se já estiver instalado, esconde o botão
-        if (isAppInstalled()) {
-            floatBtn.style.display = 'none';
-        }
     </script>
     {% block scripts %}{% endblock %}
 </body>

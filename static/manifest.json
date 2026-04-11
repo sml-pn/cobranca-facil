@@ -2,11 +2,10 @@
   "name": "Cobrança Auto Fácil",
   "short_name": "Cobrança",
   "description": "Sistema de cobrança inteligente para lojas de veículos",
-  "display": "standalone",
   "start_url": "/",
-  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1e3c72",
   "theme_color": "#1e3c72",
-  "background_color": "#ffffff",
   "orientation": "portrait-primary",
   "icons": [
     {
