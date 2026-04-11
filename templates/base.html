@@ -4,8 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>{% block title %}Cobrança Inteligente{% endblock %}</title>
-    <!-- Font Awesome para ícones -->
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cobrança Auto">
+    <meta name="theme-color" content="#1e3c72">
+    
+    <!-- Ícones iOS -->
+    <link rel="apple-touch-icon" href="/static/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/static/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/static/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/static/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-icon-180x180.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+    
     <style>
         * {
             margin: 0;
@@ -19,7 +40,6 @@
             display: flex;
             flex-direction: column;
         }
-        /* Cabeçalho */
         .header {
             background: #1e3c72;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
@@ -40,7 +60,6 @@
         .header h1 i {
             font-size: 1.8rem;
         }
-        /* Navegação */
         .nav-bar {
             background: white;
             padding: 0.6rem 1.5rem;
@@ -70,7 +89,6 @@
             color: #1e3c72;
             border-bottom-color: #1e3c72;
         }
-        /* Conteúdo principal */
         .main-content {
             flex: 1;
             padding: 1.5rem;
@@ -78,7 +96,6 @@
             margin: 0 auto;
             width: 100%;
         }
-        /* Cards e containers */
         .card {
             background: white;
             border-radius: 16px;
@@ -144,7 +161,6 @@
         .btn-success:hover {
             background: #218838;
         }
-        /* Flash messages */
         .flash {
             padding: 1rem 1.5rem;
             border-radius: 50px;
@@ -164,7 +180,6 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Tabelas responsivas */
         .table-wrapper {
             overflow-x: auto;
             margin: 1rem 0;
@@ -195,7 +210,6 @@
         tr:hover td {
             background: #fafbff;
         }
-        /* Lista de parcelas (cards no mobile) */
         .parcela-list {
             display: flex;
             flex-direction: column;
@@ -256,7 +270,6 @@
             background: #fff3cd;
             color: #856404;
         }
-        /* Formulários */
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -286,7 +299,6 @@
             flex-wrap: wrap;
             margin-top: 2rem;
         }
-        /* Rodapé */
         .footer {
             text-align: center;
             padding: 1.5rem;
@@ -294,7 +306,6 @@
             border-top: 1px solid #e2e8f0;
             margin-top: auto;
         }
-        /* Mobile adjustments */
         @media (max-width: 600px) {
             .header h1 { font-size: 1.3rem; }
             .nav-bar { padding: 0.5rem 1rem; }
@@ -302,6 +313,19 @@
             .card { padding: 1.2rem; }
             .parcela-item { flex-direction: column; align-items: flex-start; }
             .parcela-actions { width: 100%; justify-content: flex-end; }
+        }
+        #installAppBtn {
+            background: #28a745;
+            color: white !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 30px !important;
+            border-bottom: none !important;
+        }
+        #installAppBtn i {
+            color: white !important;
+        }
+        #installAppBtn:hover {
+            background: #218838 !important;
         }
     </style>
     {% block extra_head %}{% endblock %}
@@ -315,6 +339,10 @@
         <a href="{{ url_for('listar_clientes') }}"><i class="fas fa-users"></i> Clientes</a>
         <a href="{{ url_for('nova_parcela') }}"><i class="fas fa-file-invoice-dollar"></i> Nova Parcela</a>
         <a href="{{ url_for('novo_cliente') }}"><i class="fas fa-user-plus"></i> Novo Cliente</a>
+        <!-- Botão de instalação (visível apenas quando disponível) -->
+        <a href="#" id="installAppBtn" style="display: none;" onclick="return false;">
+            <i class="fas fa-download"></i> Instalar App
+        </a>
     </nav>
 
     <main class="main-content">
@@ -336,6 +364,87 @@
         <p>&copy; {{ now.year }} Cobrança Auto Fácil – Lembretes inteligentes para seu negócio</p>
     </footer>
 
+    <script>
+        // 1. REGISTRO DO SERVICE WORKER (para notificações push)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('✅ Service Worker registrado'))
+                    .catch(err => console.log('❌ Erro SW:', err));
+            });
+        }
+
+        // 2. SOLICITAÇÃO DE PERMISSÃO PARA NOTIFICAÇÕES (pop-up do sistema)
+        if ('Notification' in window && Notification.permission === 'default') {
+            setTimeout(() => {
+                Notification.requestPermission();
+            }, 3000);
+        }
+
+        // 3. VERIFICAÇÃO DE LEMBRETES (Push)
+        async function verificarLembretesENotificar() {
+            if (Notification.permission !== 'granted') return;
+            try {
+                const response = await fetch('/api/lembretes');
+                const data = await response.json();
+                if (data.lembretes && data.lembretes.length > 0) {
+                    data.lembretes.forEach(item => {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification('🔔 Cobrança Auto Fácil', {
+                                body: `${item.cliente} - Parcela ${item.parcela} vence em ${item.dias} dias. ${item.valor}`,
+                                icon: '/static/android-icon-192x192.png',
+                                badge: '/static/favicon-96x96.png',
+                                vibrate: [200, 100, 200],
+                                tag: `parcela-${item.cliente}-${item.parcela}`,
+                                renotify: true
+                            });
+                        });
+                    });
+                }
+            } catch (e) {
+                console.log('Erro ao buscar lembretes:', e);
+            }
+        }
+        window.addEventListener('load', () => { setTimeout(verificarLembretesENotificar, 5000); });
+        setInterval(verificarLembretesENotificar, 30 * 60 * 1000);
+
+        // 4. LÓGICA DE INSTALAÇÃO (Botão no menu)
+        let deferredPrompt;
+        const installBtn = document.getElementById('installAppBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installBtn) installBtn.style.display = 'inline-flex';
+        });
+
+        if (installBtn) {
+            installBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    installBtn.style.display = 'none';
+                } else {
+                    alert('Para instalar o app, use o menu do navegador:\n' +
+                          '• Chrome PC: Menu → "Instalar Cobrança Auto Fácil..."\n' +
+                          '• Android: Menu → "Instalar aplicativo"\n' +
+                          '• iOS: Compartilhar → "Adicionar à Tela de Início"');
+                }
+            });
+        }
+
+        // Esconde o botão se já estiver instalado
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+            if (installBtn) installBtn.style.display = 'none';
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if (installBtn) installBtn.style.display = 'none';
+            console.log('App instalado com sucesso!');
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
