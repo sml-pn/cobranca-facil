@@ -33,7 +33,7 @@ class Cliente(db.Model):
     valor_total = db.Column(db.Float, nullable=False, default=0.0)
     quantidade_parcelas = db.Column(db.Integer, nullable=False, default=1)
     valor_parcela = db.Column(db.Float, nullable=False, default=0.0)
-    dia_vencimento = db.Column(db.Integer, nullable=False, default=10)  # NOVO: dia fixo do mês
+    dia_vencimento = db.Column(db.Integer, nullable=False, default=10)
     data_cadastro = db.Column(db.DateTime, default=datetime.now)
     parcelas = db.relationship('Parcela', backref='cliente', lazy=True, cascade='all, delete-orphan')
 
@@ -47,17 +47,14 @@ class Parcela(db.Model):
     pago = db.Column(db.Boolean, default=False)
     observacao = db.Column(db.String(200), nullable=True)
 
-# --- FUNÇÃO AUXILIAR PARA CALCULAR DATA DE VENCIMENTO COM DIA FIXO ---
+# --- FUNÇÃO AUXILIAR PARA DIA FIXO ---
 def calcular_proximo_vencimento(data_base, dia_fixo):
-    """Retorna a data do próximo vencimento com dia fixo após a data base"""
     ano = data_base.year
     mes = data_base.month
-    # Último dia do mês para ajustar dia fixo > dias do mês
     ultimo_dia = calendar.monthrange(ano, mes)[1]
     dia = min(dia_fixo, ultimo_dia)
     vencimento = datetime(ano, mes, dia).date()
     if vencimento < data_base:
-        # Avança para o próximo mês
         mes += 1
         if mes > 12:
             mes = 1
@@ -77,26 +74,22 @@ def inject_now():
 def index():
     hoje = datetime.now().date()
     
-    # Parcelas que vencem hoje
     vence_hoje = Parcela.query.filter(
         Parcela.data_vencimento == hoje,
         Parcela.pago == False
     ).count()
     
-    # Parcelas que vencem esta semana (próximos 7 dias)
     limite_semana = hoje + timedelta(days=7)
     esta_semana = Parcela.query.filter(
         Parcela.data_vencimento.between(hoje, limite_semana),
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
     
-    # Parcelas vencidas (atrasadas)
     vencidas = Parcela.query.filter(
         Parcela.data_vencimento < hoje,
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
     
-    # Total a receber (parcelas pendentes)
     pendentes = Parcela.query.filter_by(pago=False).all()
     total_receber = sum(p.valor for p in pendentes)
     
@@ -143,7 +136,6 @@ def novo_cliente():
             if i == 1:
                 data_vencimento = data_primeira
             else:
-                # A partir da segunda, calcula pelo dia fixo
                 data_vencimento = calcular_proximo_vencimento(data_primeira + timedelta(days=30*(i-1)), dia_vencimento)
             
             parcela = Parcela(
@@ -168,7 +160,6 @@ def editar_cliente(id):
         cliente.telefone = request.form['telefone']
         cliente.carro = request.form['carro']
         cliente.dia_vencimento = int(request.form.get('dia_vencimento', 10))
-        # Não altera valor_total, quantidade_parcelas, etc. para não quebrar parcelas existentes
         db.session.commit()
         flash(f'Cliente {cliente.codigo} atualizado!', 'success')
         return redirect(url_for('listar_clientes'))
@@ -220,9 +211,11 @@ scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
-# --- CRIAÇÃO DAS TABELAS ---
+# --- CRIAÇÃO DAS TABELAS (COM RESET TEMPORÁRIO) ---
 with app.app_context():
+    db.drop_all()
     db.create_all()
+    print("Banco de dados resetado com nova estrutura!")
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
