@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import atexit
@@ -34,7 +34,7 @@ class Cliente(db.Model):
     quantidade_parcelas = db.Column(db.Integer, nullable=False, default=1)
     valor_parcela = db.Column(db.Float, nullable=False, default=0.0)
     dia_vencimento = db.Column(db.Integer, nullable=False, default=10)
-    data_cadastro = db.Column(db.DateTime, default=datetime.now)
+    data_cadastro = db.Column(db.DateTime, default=datetime.utcnow)
     parcelas = db.relationship('Parcela', backref='cliente', lazy=True, cascade='all, delete-orphan')
 
 class Parcela(db.Model):
@@ -47,13 +47,13 @@ class Parcela(db.Model):
     pago = db.Column(db.Boolean, default=False)
     observacao = db.Column(db.String(200), nullable=True)
 
-# --- FUNÇÃO AUXILIAR PARA DIA FIXO ---
+# --- FUNÇÃO PARA DIA FIXO ---
 def calcular_proximo_vencimento(data_base, dia_fixo):
     ano = data_base.year
     mes = data_base.month
     ultimo_dia = calendar.monthrange(ano, mes)[1]
     dia = min(dia_fixo, ultimo_dia)
-    vencimento = datetime(ano, mes, dia).date()
+    vencimento = date(ano, mes, dia)
     if vencimento < data_base:
         mes += 1
         if mes > 12:
@@ -61,35 +61,39 @@ def calcular_proximo_vencimento(data_base, dia_fixo):
             ano += 1
         ultimo_dia = calendar.monthrange(ano, mes)[1]
         dia = min(dia_fixo, ultimo_dia)
-        vencimento = datetime(ano, mes, dia).date()
+        vencimento = date(ano, mes, dia)
     return vencimento
 
 # --- CONTEXTO GLOBAL ---
 @app.context_processor
 def inject_now():
-    return {'now': datetime.now()}
+    return {'now': datetime.utcnow()}  # UTC para consistência com o servidor
 
 # --- ROTAS ---
 @app.route('/')
 def index():
-    hoje = datetime.now().date()
+    hoje = date.today()  # Usa a data local do servidor (UTC no Render, mas OK para comparação)
     
+    # Parcelas que vencem exatamente hoje
     vence_hoje = Parcela.query.filter(
         Parcela.data_vencimento == hoje,
         Parcela.pago == False
-    ).count()
+    ).order_by(Parcela.data_vencimento).all()
     
-    limite_semana = hoje + timedelta(days=7)
+    # Próximos 7 dias (inclui hoje)
+    limite = hoje + timedelta(days=7)
     esta_semana = Parcela.query.filter(
-        Parcela.data_vencimento.between(hoje, limite_semana),
+        Parcela.data_vencimento.between(hoje, limite),
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
     
+    # Parcelas vencidas (data menor que hoje)
     vencidas = Parcela.query.filter(
         Parcela.data_vencimento < hoje,
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
     
+    # Total a receber (todas as pendentes)
     pendentes = Parcela.query.filter_by(pago=False).all()
     total_receber = sum(p.valor for p in pendentes)
     
@@ -136,8 +140,10 @@ def novo_cliente():
             if i == 1:
                 data_vencimento = data_primeira
             else:
-                data_vencimento = calcular_proximo_vencimento(data_primeira + timedelta(days=30*(i-1)), dia_vencimento)
-            
+                data_vencimento = calcular_proximo_vencimento(
+                    data_primeira + timedelta(days=30*(i-1)), 
+                    dia_vencimento
+                )
             parcela = Parcela(
                 cliente_id=cliente.id,
                 numero=i,
@@ -169,14 +175,14 @@ def editar_cliente(id):
 def pagar_parcela(id):
     parcela = Parcela.query.get_or_404(id)
     parcela.pago = True
-    parcela.data_pagamento = datetime.now()
+    parcela.data_pagamento = datetime.utcnow()
     db.session.commit()
     flash(f'Parcela {parcela.numero}/{parcela.cliente.quantidade_parcelas} de {parcela.cliente.nome} paga!', 'success')
     return redirect(url_for('index'))
 
 @app.route('/api/lembretes')
 def api_lembretes():
-    hoje = datetime.now().date()
+    hoje = date.today()
     limite = hoje + timedelta(days=5)
     parcelas = Parcela.query.filter(
         Parcela.data_vencimento.between(hoje, limite),
@@ -194,10 +200,10 @@ def api_lembretes():
         })
     return {'lembretes': resultado}
 
-# --- VERIFICAÇÃO DIÁRIA ---
+# --- VERIFICAÇÃO DIÁRIA (LOG) ---
 def verificar_lembretes():
     with app.app_context():
-        hoje = datetime.now().date()
+        hoje = date.today()
         alvo = hoje + timedelta(days=5)
         parcelas = Parcela.query.filter(
             Parcela.data_vencimento == alvo,
@@ -211,11 +217,9 @@ scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
-# --- CRIAÇÃO DAS TABELAS (COM RESET TEMPORÁRIO) ---
+# --- CRIAÇÃO DAS TABELAS (SEM RESET – apenas cria se não existir) ---
 with app.app_context():
-    db.drop_all()
     db.create_all()
-    print("Banco de dados resetado com nova estrutura!")
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
