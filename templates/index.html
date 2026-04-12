@@ -4,11 +4,11 @@
 
 {% block content %}
 <!-- Cards de Resumo -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 25px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 25px;">
     <div class="card" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #dc3545, #c82333); color: white;">
         <i class="fas fa-exclamation-triangle" style="font-size: 2rem;"></i>
-        <h3 style="margin: 10px 0; font-size: 2rem;">{{ vence_hoje }}</h3>
-        <p>Vencem HOJE</p>
+        <h3 style="margin: 10px 0; font-size: 2rem;">{{ vence_hoje|length }}</h3>
+        <p>Vence HOJE</p>
     </div>
     <div class="card" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #fd7e14, #e66a00); color: white;">
         <i class="fas fa-calendar-week" style="font-size: 2rem;"></i>
@@ -22,7 +22,7 @@
     </div>
     <div class="card" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #28a745, #218838); color: white;">
         <i class="fas fa-hand-holding-usd" style="font-size: 2rem;"></i>
-        <h3 style="margin: 10px 0; font-size: 1.5rem;">R$ {{ "%.2f"|format(total_receber) }}</h3>
+        <h3 style="margin: 10px 0; font-size: 1.4rem;">R$ {{ "%.2f"|format(total_receber) }}</h3>
         <p>Total a Receber</p>
     </div>
 </div>
@@ -62,15 +62,50 @@
 </div>
 {% endif %}
 
-<!-- Parcelas Esta Semana -->
+<!-- Parcelas que Vencem Hoje -->
+{% if vence_hoje %}
+<div class="card">
+    <div class="card-header">
+        <h2 style="color: #dc3545;"><i class="fas fa-bell"></i> Vencem HOJE</h2>
+        <span class="badge" style="background: #dc3545; color: white;">{{ vence_hoje|length }}</span>
+    </div>
+    <div class="parcela-list">
+        {% for p in vence_hoje %}
+        <div class="parcela-item" style="border-left: 5px solid #dc3545;">
+            <div class="parcela-info">
+                <h3>{{ p.cliente.nome }} <span style="font-weight: normal;">({{ p.cliente.carro }})</span></h3>
+                <div class="parcela-detail">
+                    <span><i class="fas fa-tag"></i> Parcela {{ p.numero }}/{{ p.cliente.quantidade_parcelas }}</span>
+                    <span><i class="fas fa-money-bill-wave"></i> R$ {{ "%.2f"|format(p.valor) }}</span>
+                    <span><i class="fas fa-calendar-alt"></i> Vence HOJE ({{ p.data_vencimento.strftime('%d/%m/%Y') }})</span>
+                    <span><i class="fas fa-phone-alt"></i> {{ p.cliente.telefone }}</span>
+                </div>
+            </div>
+            <div class="parcela-actions">
+                <a href="{{ url_for('pagar_parcela', id=p.id) }}" class="btn btn-success" onclick="return confirm('Confirmar pagamento da parcela {{ p.numero }}/{{ p.cliente.quantidade_parcelas }} de {{ p.cliente.nome }}?')">
+                    <i class="fas fa-check-circle"></i> Marcar Paga
+                </a>
+                <a href="https://wa.me/55{{ p.cliente.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}?text=Olá {{ p.cliente.nome|urlencode }}, a parcela {{ p.numero }}/{{ p.cliente.quantidade_parcelas }} do seu {{ p.cliente.carro }} vence HOJE ({{ p.data_vencimento.strftime('%d/%m/%Y') }}). Valor: R$ {{ '%.2f'|format(p.valor) }}. Posso enviar o boleto/PIX?" 
+                   target="_blank" class="btn btn-outline" style="background: #25D366; color: white; border: none;">
+                    <i class="fab fa-whatsapp"></i> Notificar
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Parcelas Esta Semana (exclui as de hoje, se já mostradas separadamente) -->
+{% set semana_sem_hoje = esta_semana | rejectattr('data_vencimento', 'equalto', now.date()) | list %}
+{% if semana_sem_hoje %}
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-calendar-alt"></i> Vencimentos nos Próximos 7 Dias</h2>
-        <span class="badge">{{ esta_semana|length }}</span>
+        <span class="badge">{{ semana_sem_hoje|length }}</span>
     </div>
-    {% if esta_semana %}
     <div class="parcela-list">
-        {% for p in esta_semana %}
+        {% for p in semana_sem_hoje %}
         <div class="parcela-item">
             <div class="parcela-info">
                 <h3>{{ p.cliente.nome }} <span style="font-weight: normal;">({{ p.cliente.carro }})</span></h3>
@@ -80,9 +115,7 @@
                     <span><i class="fas fa-calendar-alt"></i> Vence {{ p.data_vencimento.strftime('%d/%m/%Y') }}</span>
                     <span><i class="fas fa-clock"></i> 
                         {% set dias = (p.data_vencimento - now.date()).days %}
-                        {% if dias == 0 %}
-                            <span style="color: #dc3545; font-weight: bold;">Vence HOJE!</span>
-                        {% elif dias == 1 %}
+                        {% if dias == 1 %}
                             <span style="color: #fd7e14; font-weight: bold;">Vence AMANHÃ</span>
                         {% else %}
                             Faltam {{ dias }} dias
@@ -103,8 +136,16 @@
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <p style="text-align: center; padding: 1rem; color: #64748b;">Nenhum vencimento para os próximos 7 dias.</p>
-    {% endif %}
 </div>
+{% endif %}
+
+<!-- Se não houver nenhuma parcela pendente -->
+{% if not vencidas and not vence_hoje and not semana_sem_hoje %}
+<div class="card">
+    <div style="text-align: center; padding: 2rem; color: #64748b;">
+        <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 1rem; color: #28a745;"></i>
+        <p>Nenhuma parcela pendente no momento!</p>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
