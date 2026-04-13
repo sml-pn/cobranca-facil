@@ -3,55 +3,57 @@
 {% block title %}Dashboard - Cobrança Fácil{% endblock %}
 
 {% block content %}
-<!-- Cards de Resumo (clicáveis para filtrar) -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 25px;">
-    <!-- Card Vencidas (Vermelho) -->
-    <div class="card filter-card" data-filter="vencidas" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #dc3545, #c82333); color: white; cursor: pointer; transition: transform 0.2s;">
-        <i class="fas fa-exclamation-circle" style="font-size: 2rem;"></i>
-        <h3 style="margin: 10px 0; font-size: 2rem;">{{ vencidas|length }}</h3>
+<!-- KPIs Grid Responsivo -->
+<div class="kpi-grid">
+    <!-- Vencidas -->
+    <div class="kpi-card filter-chip-card" data-filter="vencidas" style="background: linear-gradient(135deg, #dc3545, #c82333);">
+        <i class="fas fa-exclamation-circle"></i>
+        <h3>{{ vencidas|length }}</h3>
         <p>Vencidas</p>
+        <small>↑ 0% vs. mês ant.</small>
     </div>
-    
-    <!-- Card Vence HOJE (Laranja) -->
-    <div class="card filter-card" data-filter="hoje" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #fd7e14, #e66a00); color: white; cursor: pointer; transition: transform 0.2s;">
-        <i class="fas fa-bell" style="font-size: 2rem;"></i>
-        <h3 style="margin: 10px 0; font-size: 2rem;">{{ vence_hoje|length }}</h3>
+    <!-- Vence Hoje -->
+    <div class="kpi-card filter-chip-card" data-filter="hoje" style="background: linear-gradient(135deg, #fd7e14, #e66a00);">
+        <i class="fas fa-bell"></i>
+        <h3>{{ vence_hoje|length }}</h3>
         <p>Vence HOJE</p>
+        <small>↑ 0% vs. mês ant.</small>
     </div>
-    
-    <!-- Card Esta Semana (Amarelo) -->
-    <div class="card filter-card" data-filter="semana" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #ffc107, #e0a800); color: #1e293b; cursor: pointer; transition: transform 0.2s;">
-        <i class="fas fa-calendar-alt" style="font-size: 2rem;"></i>
-        <h3 style="margin: 10px 0; font-size: 2rem;">{{ esta_semana|length }}</h3>
+    <!-- Esta Semana -->
+    <div class="kpi-card filter-chip-card" data-filter="semana" style="background: linear-gradient(135deg, #ffc107, #e0a800); color: #1e293b;">
+        <i class="fas fa-calendar-alt"></i>
+        <h3>{{ esta_semana|length }}</h3>
         <p>Esta Semana</p>
+        <small style="color: #1e293b;">↑ 0% vs. mês ant.</small>
     </div>
-    
-    <!-- Card Total a Receber (Verde - remove filtro) -->
-    <div class="card filter-card" data-filter="todas" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #28a745, #218838); color: white; cursor: pointer; transition: transform 0.2s;">
-        <i class="fas fa-hand-holding-usd" style="font-size: 2rem;"></i>
-        <h3 style="margin: 10px 0; font-size: 1.4rem;">{{ total_receber|real }}</h3>
+    <!-- Total a Receber (remove filtro) -->
+    <div class="kpi-card filter-chip-card" data-filter="todas" style="background: linear-gradient(135deg, #28a745, #218838);">
+        <i class="fas fa-hand-holding-usd"></i>
+        <h3>{{ total_receber|real }}</h3>
         <p>Total a Receber</p>
+        <small>↑ 0% vs. mês ant.</small>
     </div>
 </div>
 
-<!-- Barra de controles: ordenação e botão limpar filtro -->
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-    <div id="clearFilterContainer" style="display: none;">
-        <button class="btn btn-outline" onclick="limparFiltro()" style="background: white;">
-            <i class="fas fa-times"></i> Limpar filtro
-        </button>
+<!-- Chips de Filtro -->
+<div class="filter-chips-container">
+    <div class="filter-chips">
+        <div class="filter-chip active" data-filter="todas">Todas</div>
+        <div class="filter-chip" data-filter="vencidas">Vencidas</div>
+        <div class="filter-chip" data-filter="hoje">Vence Hoje</div>
+        <div class="filter-chip" data-filter="semana">Esta Semana</div>
     </div>
-    <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
-        <label for="ordenacao" style="font-weight: 500; color: #1e293b;"><i class="fas fa-sort"></i> Ordenar por:</label>
-        <select id="ordenacao" class="form-control" style="width: auto; padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid #cbd5e1;">
-            <option value="data">Data (próximas primeiro)</option>
-            <option value="nome">Nome do cliente</option>
-            <option value="valor">Valor (maior)</option>
+    <div class="ordenacao-wrapper">
+        <label for="ordenacao"><i class="fas fa-sort"></i> Ordenar:</label>
+        <select id="ordenacao">
+            <option value="data">Data</option>
+            <option value="nome">Nome</option>
+            <option value="valor">Valor</option>
         </select>
     </div>
 </div>
 
-<!-- Container das parcelas -->
+<!-- Container das Parcelas -->
 <div id="parcelasContainer"></div>
 
 <!-- Botão Carregar Mais -->
@@ -61,40 +63,205 @@
     </button>
 </div>
 
-<!-- Botão de Ajuda para Instalação do App (flutuante) -->
+<!-- Botão de Ajuda Instalação (mobile) -->
 <div id="installHelpButton" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
     <button onclick="showInstallGuide()" style="background: #1e3c72; color: white; border: none; padding: 12px 20px; border-radius: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: bold; cursor: pointer;">
         ⬇️ Como baixar o App
     </button>
 </div>
 
+<style>
+    /* KPIs Grid Responsivo */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    @media (min-width: 768px) {
+        .kpi-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+    .kpi-card {
+        padding: 1.2rem;
+        text-align: center;
+        border-radius: 16px;
+        color: white;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .kpi-card i {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+    .kpi-card h3 {
+        margin: 10px 0 5px;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    .kpi-card p {
+        margin: 0;
+        font-weight: 500;
+    }
+    .kpi-card small {
+        display: block;
+        margin-top: 8px;
+        font-size: 0.75rem;
+        opacity: 0.9;
+    }
+    .kpi-card.active {
+        transform: scale(1.02);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+
+    /* Chips de Filtro */
+    .filter-chips-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 15px;
+    }
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .filter-chip {
+        background: white;
+        border: 1px solid #cbd5e1;
+        color: #1e293b;
+        padding: 8px 16px;
+        border-radius: 40px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+    }
+    .filter-chip.active {
+        background: #1e3c72;
+        color: white;
+        border-color: #1e3c72;
+    }
+    .ordenacao-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .ordenacao-wrapper select {
+        padding: 8px 12px;
+        border-radius: 20px;
+        border: 1px solid #cbd5e1;
+        background: white;
+        font-size: 0.9rem;
+    }
+
+    /* Tabela Responsiva */
+    .parcela-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .parcela-table thead {
+        background: #f8fafc;
+    }
+    .parcela-table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #1e293b;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .parcela-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+    }
+    .parcela-table tbody tr:hover {
+        background: #fafbff;
+    }
+    @media (max-width: 767px) {
+        .parcela-table thead {
+            display: none;
+        }
+        .parcela-table tbody tr {
+            display: block;
+            margin-bottom: 15px;
+            border: 1px solid #e0e7ef;
+            border-radius: 12px;
+            padding: 12px;
+            background: white;
+        }
+        .parcela-table td {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #edf2f7;
+        }
+        .parcela-table td:last-child {
+            border-bottom: none;
+        }
+        .parcela-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .parcela-actions {
+            justify-content: flex-end;
+        }
+    }
+
+    .parcela-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .btn-success {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    .btn-whatsapp {
+        background: #25D366;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        text-decoration: none;
+    }
+</style>
+
 <script>
-    // Dados brutos vindos do backend
     const parcelasData = {
         vencidas: {{ vencidas|tojson }},
         hoje: {{ vence_hoje|tojson }},
         semana: {{ esta_semana|tojson }}
     };
-    
-    // Estado atual
+
     let filtroAtual = 'todas';
     let parcelasFiltradas = [];
     let paginaAtual = 1;
     const ITENS_POR_PAGINA = 10;
-    
-    // Elementos DOM
     const container = document.getElementById('parcelasContainer');
-    const clearBtn = document.getElementById('clearFilterContainer');
     const loadMoreContainer = document.getElementById('loadMoreContainer');
     const ordenacaoSelect = document.getElementById('ordenacao');
     const installHelpBtn = document.getElementById('installHelpButton');
-    
-    // Exibe o botão de instalação apenas em dispositivos móveis
+
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         installHelpBtn.style.display = 'block';
     }
-    
-    // Função para mostrar guia de instalação
     window.showInstallGuide = function() {
         let message = "";
         if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
@@ -106,229 +273,102 @@
         }
         alert(message);
     };
-    
-    // Função para ordenar parcelas
+
     function ordenarParcelas(parcelas, criterio) {
         const copia = [...parcelas];
-        if (criterio === 'data') {
-            copia.sort((a, b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
-        } else if (criterio === 'nome') {
-            copia.sort((a, b) => a.cliente.nome.localeCompare(b.cliente.nome));
-        } else if (criterio === 'valor') {
-            copia.sort((a, b) => b.valor - a.valor);
-        }
+        if (criterio === 'data') copia.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
+        else if (criterio === 'nome') copia.sort((a,b) => a.cliente.nome.localeCompare(b.cliente.nome));
+        else if (criterio === 'valor') copia.sort((a,b) => b.valor - a.valor);
         return copia;
     }
-    
-    // Função para aplicar filtro e ordenação
+
     function atualizarParcelasFiltradas() {
         let parcelas = [];
-        if (filtroAtual === 'vencidas') {
-            parcelas = parcelasData.vencidas;
-        } else if (filtroAtual === 'hoje') {
-            parcelas = parcelasData.hoje;
-        } else if (filtroAtual === 'semana') {
-            parcelas = parcelasData.semana;
-        } else {
-            // 'todas' - combina sem duplicar
-            const todas = [
-                ...parcelasData.vencidas,
-                ...parcelasData.hoje,
-                ...parcelasData.semana
-            ];
+        if (filtroAtual === 'vencidas') parcelas = parcelasData.vencidas;
+        else if (filtroAtual === 'hoje') parcelas = parcelasData.hoje;
+        else if (filtroAtual === 'semana') parcelas = parcelasData.semana;
+        else {
+            const todas = [...parcelasData.vencidas, ...parcelasData.hoje, ...parcelasData.semana];
             const ids = new Set();
-            parcelas = todas.filter(p => {
-                if (ids.has(p.id)) return false;
-                ids.add(p.id);
-                return true;
-            });
+            parcelas = todas.filter(p => ids.has(p.id) ? false : ids.add(p.id));
         }
-        
         parcelasFiltradas = ordenarParcelas(parcelas, ordenacaoSelect.value);
         paginaAtual = 1;
         renderizarParcelas();
     }
-    
-    // Renderiza a página atual
+
     function renderizarParcelas() {
-        const inicio = 0;
-        const fim = paginaAtual * ITENS_POR_PAGINA;
+        const inicio = 0, fim = paginaAtual * ITENS_POR_PAGINA;
         const parcelasPagina = parcelasFiltradas.slice(inicio, fim);
-        
+
         if (parcelasFiltradas.length === 0) {
-            container.innerHTML = `
-                <div class="card">
-                    <div style="text-align: center; padding: 2rem; color: #64748b;">
-                        <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 1rem; color: #28a745;"></i>
-                        <p>Nenhuma parcela neste filtro!</p>
-                    </div>
-                </div>
-            `;
+            container.innerHTML = `<div class="card"><div style="text-align:center;padding:2rem;"><i class="fas fa-check-circle" style="font-size:3rem;color:#28a745;"></i><p>Nenhuma parcela neste filtro!</p></div></div>`;
             loadMoreContainer.style.display = 'none';
             return;
         }
-        
-        // Determina título e cor conforme filtro
-        let titulo = '';
-        let corDestaque = '';
-        let icone = '';
-        if (filtroAtual === 'vencidas') {
-            titulo = 'Parcelas Vencidas (Atrasadas)';
-            corDestaque = '#dc3545';
-            icone = 'exclamation-circle';
-        } else if (filtroAtual === 'hoje') {
-            titulo = 'Parcelas que Vencem HOJE';
-            corDestaque = '#fd7e14';
-            icone = 'bell';
-        } else if (filtroAtual === 'semana') {
-            titulo = 'Vencimentos nos Próximos 7 Dias';
-            corDestaque = '#ffc107';
-            icone = 'calendar-alt';
-        } else {
-            titulo = 'Todas as Parcelas Pendentes';
-            corDestaque = '#2a5298';
-            icone = 'list';
-        }
-        
-        let html = `
-            <div class="card">
-                <div class="card-header">
-                    <h2 style="color: ${corDestaque};"><i class="fas fa-${icone}"></i> ${titulo}</h2>
-                    <span class="badge" style="background: ${corDestaque}; color: white;">${parcelasFiltradas.length}</span>
-                </div>
-                <div class="parcela-list">
-        `;
-        
+
+        let titulo = '', cor = '', icone = '';
+        if (filtroAtual === 'vencidas') { titulo='Parcelas Vencidas'; cor='#dc3545'; icone='exclamation-circle'; }
+        else if (filtroAtual === 'hoje') { titulo='Vencem HOJE'; cor='#fd7e14'; icone='bell'; }
+        else if (filtroAtual === 'semana') { titulo='Próximos 7 Dias'; cor='#ffc107'; icone='calendar-alt'; }
+        else { titulo='Todas as Pendentes'; cor='#2a5298'; icone='list'; }
+
+        let html = `<div class="card"><div class="card-header"><h2 style="color:${cor};"><i class="fas fa-${icone}"></i> ${titulo}</h2><span class="badge" style="background:${cor};">${parcelasFiltradas.length}</span></div>`;
+        html += `<table class="parcela-table"><thead><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+
         parcelasPagina.forEach(p => {
             const hoje = new Date().toISOString().split('T')[0];
-            const diasRestantes = Math.ceil((new Date(p.data_vencimento) - new Date(hoje)) / (1000 * 60 * 60 * 24));
-            let statusTexto = '';
-            let statusClass = '';
-            
-            if (p.data_vencimento < hoje) {
-                statusTexto = `Atrasada há ${Math.abs(diasRestantes)} dias`;
-                statusClass = 'style="color: #dc3545; font-weight: bold;"';
-            } else if (diasRestantes === 0) {
-                statusTexto = 'Vence HOJE!';
-                statusClass = 'style="color: #dc3545; font-weight: bold;"';
-            } else if (diasRestantes === 1) {
-                statusTexto = 'Vence AMANHÃ';
-                statusClass = 'style="color: #fd7e14; font-weight: bold;"';
-            } else {
-                statusTexto = `Faltam ${diasRestantes} dias`;
-                statusClass = '';
-            }
-            
-            let borderColor = '#ffc107';
-            if (p.data_vencimento < hoje) {
-                borderColor = '#dc3545';
-            } else if (diasRestantes === 0) {
-                borderColor = '#fd7e14';
-            }
-            
+            const dias = Math.ceil((new Date(p.data_vencimento) - new Date(hoje)) / 86400000);
+            let statusTexto = '', statusCor = '';
+            if (p.data_vencimento < hoje) { statusTexto = `Atrasada ${Math.abs(dias)}d`; statusCor = '#dc3545'; }
+            else if (dias === 0) { statusTexto = 'HOJE'; statusCor = '#dc3545'; }
+            else if (dias === 1) { statusTexto = 'Amanhã'; statusCor = '#fd7e14'; }
+            else { statusTexto = `${dias} dias`; statusCor = '#64748b'; }
+
             let whatsappMsg = '';
-            if (p.data_vencimento < hoje) {
-                whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
-            } else if (diasRestantes === 0) {
-                whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence HOJE (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Efetue o pagamento.`;
-            } else {
-                whatsappMsg = `Olá ${p.cliente.nome}, lembrete: a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence em ${diasRestantes} dias (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
-            }
-            
-            html += `
-                <div class="parcela-item" style="border-left: 5px solid ${borderColor};">
-                    <div class="parcela-info">
-                        <h3>${p.cliente.nome} <span style="font-weight: normal;">(${p.cliente.carro})</span></h3>
-                        <div class="parcela-detail">
-                            <span><i class="fas fa-tag"></i> Parcela ${p.numero}/${p.cliente.quantidade_parcelas}</span>
-                            <span><i class="fas fa-money-bill-wave"></i> R$ ${p.valor.toFixed(2).replace('.', ',')}</span>
-                            <span><i class="fas fa-calendar-alt"></i> Vence ${p.data_vencimento.split('-').reverse().join('/')}</span>
-                            <span ${statusClass}><i class="fas fa-clock"></i> ${statusTexto}</span>
-                            <span><i class="fas fa-phone-alt"></i> ${p.cliente.telefone}</span>
-                        </div>
-                    </div>
-                    <div class="parcela-actions">
-                        <a href="/parcela/pagar/${p.id}" class="btn btn-success" onclick="return confirm('Confirmar pagamento?')">
-                            <i class="fas fa-check-circle"></i> Marcar Paga
-                        </a>
-                        <a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}" 
-                           target="_blank" class="btn btn-outline" style="background: #25D366; color: white; border: none;">
-                            <i class="fab fa-whatsapp"></i> Notificar
-                        </a>
-                    </div>
-                </div>
-            `;
+            if (p.data_vencimento < hoje) whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
+            else if (dias === 0) whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence HOJE (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Efetue o pagamento.`;
+            else whatsappMsg = `Olá ${p.cliente.nome}, lembrete: a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence em ${dias} dias (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
+
+            html += `<tr>`;
+            html += `<td data-label="Cliente"><strong>${p.cliente.nome}</strong><br><small>${p.cliente.carro}</small></td>`;
+            html += `<td data-label="Parcela">${p.numero}/${p.cliente.quantidade_parcelas}</td>`;
+            html += `<td data-label="Vencimento">${p.data_vencimento.split('-').reverse().join('/')}</td>`;
+            html += `<td data-label="Valor">R$ ${p.valor.toFixed(2).replace('.', ',')}</td>`;
+            html += `<td data-label="Status" style="color:${statusCor}; font-weight:500;">${statusTexto}</td>`;
+            html += `<td data-label="Ações"><div class="parcela-actions">`;
+            html += `<a href="/parcela/pagar/${p.id}" class="btn-success" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i> Pagar</a>`;
+            html += `<a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>`;
+            html += `</div></td></tr>`;
         });
-        
-        html += `
-                </div>
-                <div style="text-align: center; padding-top: 15px; color: #64748b; font-size: 0.9rem;">
-                    Mostrando ${parcelasPagina.length} de ${parcelasFiltradas.length} parcelas
-                </div>
-            </div>
-        `;
-        
+
+        html += `</tbody></table>`;
+        html += `<div style="text-align:center;padding-top:15px;color:#64748b;">Mostrando ${parcelasPagina.length} de ${parcelasFiltradas.length}</div></div>`;
         container.innerHTML = html;
-        
-        // Mostra/esconde botão "Carregar mais"
         loadMoreContainer.style.display = parcelasFiltradas.length > fim ? 'block' : 'none';
     }
-    
-    function carregarMais() {
-        paginaAtual++;
-        renderizarParcelas();
-    }
-    
+
+    function carregarMais() { paginaAtual++; renderizarParcelas(); }
+
     function aplicarFiltro(filtro) {
         filtroAtual = filtro;
-        clearBtn.style.display = filtro === 'todas' ? 'none' : 'block';
+        document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
+        document.querySelector(`.filter-chip[data-filter="${filtro}"]`).classList.add('active');
+        document.querySelectorAll('.kpi-card').forEach(card => card.classList.remove('active'));
+        document.querySelector(`.kpi-card[data-filter="${filtro}"]`).classList.add('active');
         atualizarParcelasFiltradas();
-        
-        // Destaca card ativo
-        document.querySelectorAll('.filter-card').forEach(card => {
-            card.style.opacity = '0.7';
-            card.style.transform = 'scale(0.98)';
-        });
-        const activeCard = document.querySelector(`.filter-card[data-filter="${filtro}"]`);
-        if (activeCard) {
-            activeCard.style.opacity = '1';
-            activeCard.style.transform = 'scale(1.02)';
-        }
     }
-    
-    function limparFiltro() {
-        aplicarFiltro('todas');
-    }
-    
-    // Event listeners
-    document.querySelectorAll('.filter-card').forEach(card => {
-        card.addEventListener('click', function() {
-            aplicarFiltro(this.dataset.filter);
-        });
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'scale(1.02)';
-        });
-        card.addEventListener('mouseleave', function() {
-            if (this.dataset.filter !== filtroAtual) {
-                this.style.transform = 'scale(1)';
-            }
-        });
+
+    // Eventos
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => aplicarFiltro(chip.dataset.filter));
     });
-    
-    ordenacaoSelect.addEventListener('change', function() {
-        atualizarParcelasFiltradas();
+    document.querySelectorAll('.kpi-card').forEach(card => {
+        card.addEventListener('click', () => aplicarFiltro(card.dataset.filter));
     });
-    
-    // Inicialização
+    ordenacaoSelect.addEventListener('change', () => atualizarParcelasFiltradas());
+
+    // Inicializar
     atualizarParcelasFiltradas();
 </script>
-
-<style>
-    .filter-card {
-        transition: all 0.2s ease;
-    }
-    .filter-card:hover {
-        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-    }
-</style>
 {% endblock %}
