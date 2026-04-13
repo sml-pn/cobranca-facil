@@ -5,22 +5,22 @@
 {% block content %}
 <!-- KPIs Grid Responsivo -->
 <div class="kpi-grid">
-    <div class="kpi-card filter-chip-card" data-filter="vencidas" style="background: linear-gradient(135deg, #dc3545, #c82333);">
+    <div class="kpi-card filter-chip-card" data-filter="vencidas" style="background: linear-gradient(135deg, #dc3545, #8b1e1e);">
         <i class="fas fa-exclamation-circle"></i>
         <h3>{{ count_vencidas }}</h3>
         <p>Vencidas</p>
     </div>
-    <div class="kpi-card filter-chip-card" data-filter="hoje" style="background: linear-gradient(135deg, #fd7e14, #e66a00);">
+    <div class="kpi-card filter-chip-card" data-filter="hoje" style="background: linear-gradient(135deg, #fd7e14, #c05e00);">
         <i class="fas fa-bell"></i>
         <h3>{{ count_hoje }}</h3>
         <p>Vence HOJE</p>
     </div>
-    <div class="kpi-card filter-chip-card" data-filter="semana" style="background: linear-gradient(135deg, #ffc107, #e0a800); color: #1e293b;">
+    <div class="kpi-card filter-chip-card" data-filter="semana" style="background: linear-gradient(135deg, #ffc107, #d4a000); color: #1e293b;">
         <i class="fas fa-calendar-alt"></i>
         <h3>{{ count_semana }}</h3>
         <p>Esta Semana</p>
     </div>
-    <div class="kpi-card filter-chip-card" data-filter="todas" style="background: linear-gradient(135deg, #28a745, #218838);">
+    <div class="kpi-card filter-chip-card" data-filter="todas" style="background: linear-gradient(135deg, #28a745, #1e7a34);">
         <i class="fas fa-hand-holding-usd"></i>
         <h3>{{ total_receber|real }}</h3>
         <p>Total a Receber</p>
@@ -36,7 +36,7 @@
         <div class="filter-chip" data-filter="semana">Esta Semana</div>
     </div>
     <div class="ordenacao-wrapper">
-        <label for="ordenacao"><i class="fas fa-sort"></i> Ordenar:</label>
+        <label for="ordenacao"><i class="fas fa-sort"></i></label>
         <select id="ordenacao">
             <option value="data">Data</option>
             <option value="nome">Nome</option>
@@ -45,14 +45,17 @@
     </div>
 </div>
 
+<!-- Container das Parcelas -->
 <div id="parcelasContainer"></div>
 
+<!-- Botão Carregar Mais -->
 <div id="loadMoreContainer" style="text-align: center; margin-top: 20px; display: none;">
     <button class="btn btn-outline" onclick="carregarMais()">
-        <i class="fas fa-chevron-down"></i> Carregar mais parcelas
+        <i class="fas fa-chevron-down"></i> Carregar mais
     </button>
 </div>
 
+<!-- Botão de Ajuda Instalação (mobile) -->
 <div id="installHelpButton" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
     <button onclick="showInstallGuide()" style="background: #1e3c72; color: white; border: none; padding: 12px 20px; border-radius: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: bold; cursor: pointer;">
         ⬇️ Como baixar o App
@@ -60,33 +63,219 @@
 </div>
 
 <style>
-    .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
-    @media (min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
-    .kpi-card { padding: 1.2rem; text-align: center; border-radius: 16px; color: white; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-    .kpi-card i { font-size: 2rem; margin-bottom: 8px; }
-    .kpi-card h3 { margin: 10px 0 5px; font-size: 2rem; font-weight: 700; }
-    .kpi-card p { margin: 0; font-weight: 500; }
-    .kpi-card.active { transform: scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
-    .filter-chips-container { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 15px; }
-    .filter-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .filter-chip { background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 8px 16px; border-radius: 40px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-    .filter-chip.active { background: #1e3c72; color: white; border-color: #1e3c72; }
-    .ordenacao-wrapper { display: flex; align-items: center; gap: 8px; }
-    .ordenacao-wrapper select { padding: 8px 12px; border-radius: 20px; border: 1px solid #cbd5e1; background: white; }
-    .parcela-table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .parcela-table thead { background: #f8fafc; }
-    .parcela-table th { padding: 1rem; text-align: left; font-weight: 600; color: #1e293b; border-bottom: 2px solid #e2e8f0; }
-    .parcela-table td { padding: 1rem; border-bottom: 1px solid #e2e8f0; color: #334155; }
-    .parcela-table tbody tr:hover { background: #fafbff; }
-    @media (max-width: 767px) {
-        .parcela-table thead { display: none; }
-        .parcela-table tbody tr { display: block; margin-bottom: 15px; border: 1px solid #e0e7ef; border-radius: 12px; padding: 12px; background: white; }
-        .parcela-table td { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #edf2f7; }
-        .parcela-table td:last-child { border-bottom: none; }
-        .parcela-table td::before { content: attr(data-label); font-weight: 600; color: #1e293b; }
+    /* KPIs */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
     }
-    .btn-success { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; text-decoration: none; }
-    .btn-whatsapp { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; text-decoration: none; }
+    @media (min-width: 640px) {
+        .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .kpi-card {
+        padding: 1rem 0.5rem;
+        text-align: center;
+        border-radius: 16px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .kpi-card i { font-size: 1.8rem; margin-bottom: 5px; }
+    .kpi-card h3 { margin: 5px 0; font-size: 1.8rem; font-weight: 700; }
+    .kpi-card p { margin: 0; font-size: 0.9rem; font-weight: 500; }
+    .kpi-card.active { transform: scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+
+    /* Filtros */
+    .filter-chips-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        gap: 10px;
+    }
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .filter-chip {
+        background: white;
+        border: 1px solid #cbd5e1;
+        color: #1e293b;
+        padding: 8px 14px;
+        border-radius: 30px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+    .filter-chip.active {
+        background: #1e3c72;
+        color: white;
+        border-color: #1e3c72;
+    }
+    .ordenacao-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: white;
+        padding: 4px 10px;
+        border-radius: 30px;
+        border: 1px solid #cbd5e1;
+    }
+    .ordenacao-wrapper select {
+        border: none;
+        background: transparent;
+        padding: 6px 0;
+        font-size: 0.9rem;
+        outline: none;
+    }
+
+    /* Tabela/Cards */
+    .parcela-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .parcela-table thead {
+        background: #f8fafc;
+    }
+    .parcela-table th {
+        padding: 0.8rem;
+        text-align: left;
+        font-weight: 600;
+        color: #1e293b;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 0.9rem;
+    }
+    .parcela-table td {
+        padding: 0.8rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+    .parcela-table tbody tr:hover {
+        background: #fafbff;
+    }
+
+    /* Mobile: transforma tabela em cards */
+    @media (max-width: 640px) {
+        .parcela-table thead {
+            display: none;
+        }
+        .parcela-table tbody tr {
+            display: block;
+            margin-bottom: 16px;
+            border: 1px solid #e0e7ef;
+            border-radius: 16px;
+            padding: 12px;
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+        .parcela-table td {
+            display: flex;
+            align-items: flex-start;
+            padding: 10px 0;
+            border-bottom: 1px dashed #edf2f7;
+            gap: 10px;
+        }
+        .parcela-table td:last-child {
+            border-bottom: none;
+        }
+        .parcela-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #1e293b;
+            min-width: 90px;
+            font-size: 0.85rem;
+        }
+        .parcela-table td[data-label="Ações"] {
+            flex-wrap: wrap;
+        }
+        .parcela-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+        .btn-success, .btn-whatsapp {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+    }
+
+    /* Botões */
+    .btn-success {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 24px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    .btn-whatsapp {
+        background: #25D366;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 24px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    .btn-outline {
+        background: white;
+        border: 1px solid #2a5298;
+        color: #2a5298;
+        padding: 10px 20px;
+        border-radius: 40px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* Ajustes gerais */
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    .badge {
+        background: #e2e8f0;
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .cliente-nome {
+        font-weight: 600;
+        color: #0b1e33;
+    }
+    .cliente-carro {
+        font-size: 0.8rem;
+        color: #64748b;
+        display: block;
+    }
 </style>
 
 <script>
@@ -163,11 +352,11 @@
 
         let titulo = '', cor = '', icone = '';
         if (filtroAtual === 'vencidas') { titulo='Próximas Parcelas Vencidas'; cor='#dc3545'; icone='exclamation-circle'; }
-        else if (filtroAtual === 'hoje') { titulo='Próximas Parcelas - Vencem HOJE'; cor='#fd7e14'; icone='bell'; }
-        else if (filtroAtual === 'semana') { titulo='Próximas Parcelas - Esta Semana'; cor='#ffc107'; icone='calendar-alt'; }
-        else { titulo='Próximas Parcelas de Cada Cliente'; cor='#2a5298'; icone='list'; }
+        else if (filtroAtual === 'hoje') { titulo='Vencem HOJE'; cor='#fd7e14'; icone='bell'; }
+        else if (filtroAtual === 'semana') { titulo='Esta Semana'; cor='#ffc107'; icone='calendar-alt'; }
+        else { titulo='Próximas Parcelas'; cor='#2a5298'; icone='list'; }
 
-        let html = `<div class="card"><div class="card-header"><h2 style="color:${cor};"><i class="fas fa-${icone}"></i> ${titulo}</h2><span class="badge" style="background:${cor};">${parcelasFiltradas.length}</span></div>`;
+        let html = `<div class="card"><div class="card-header"><h2 style="color:${cor};"><i class="fas fa-${icone}"></i> ${titulo}</h2><span class="badge" style="background:${cor};color:white;">${parcelasFiltradas.length}</span></div>`;
         html += `<table class="parcela-table"><thead><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
 
         const hoje = new Date().toISOString().split('T')[0];
@@ -183,19 +372,19 @@
             if (p.data_vencimento < hoje) whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
 
             html += `<tr>`;
-            html += `<td data-label="Cliente"><strong>${p.cliente.nome}</strong><br><small>${p.cliente.carro}</small></td>`;
+            html += `<td data-label="Cliente"><span class="cliente-nome">${p.cliente.nome}</span><span class="cliente-carro">${p.cliente.carro}</span></td>`;
             html += `<td data-label="Parcela">${p.numero}/${p.cliente.quantidade_parcelas}</td>`;
             html += `<td data-label="Vencimento">${p.data_vencimento.split('-').reverse().join('/')}</td>`;
             html += `<td data-label="Valor">R$ ${p.valor.toFixed(2).replace('.', ',')}</td>`;
             html += `<td data-label="Status" style="color:${statusCor}; font-weight:500;">${statusTexto}</td>`;
-            html += `<td data-label="Ações"><div style="display:flex; gap:6px;">`;
-            html += `<a href="/parcela/pagar/${p.id}" class="btn-success" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i> Pagar</a>`;
-            html += `<a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>`;
+            html += `<td data-label="Ações"><div class="parcela-actions">`;
+            html += `<a href="/parcela/pagar/${p.id}" class="btn-success" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i>Pagar</a>`;
+            html += `<a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp"></i>WhatsApp</a>`;
             html += `</div></td></tr>`;
         });
 
         html += `</tbody></table>`;
-        html += `<div style="text-align:center;padding-top:15px;color:#64748b;">Mostrando ${parcelasPagina.length} de ${parcelasFiltradas.length}</div></div>`;
+        html += `<div style="text-align:center;padding-top:15px;color:#64748b;font-size:0.9rem;">Mostrando ${parcelasPagina.length} de ${parcelasFiltradas.length}</div></div>`;
         container.innerHTML = html;
         loadMoreContainer.style.display = parcelasFiltradas.length > fim ? 'block' : 'none';
     }
