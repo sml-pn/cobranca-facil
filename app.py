@@ -88,26 +88,26 @@ def inject_now():
 @app.route('/')
 def index():
     hoje = hoje_sp()
-    
+
     vence_hoje = Parcela.query.filter(
         Parcela.data_vencimento == hoje,
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
-    
+
     limite = hoje + timedelta(days=7)
     esta_semana = Parcela.query.filter(
         Parcela.data_vencimento.between(hoje, limite),
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
-    
+
     vencidas = Parcela.query.filter(
         Parcela.data_vencimento < hoje,
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
-    
+
     pendentes = Parcela.query.filter_by(pago=False).all()
     total_receber = sum(p.valor for p in pendentes)
-    
+
     # Função auxiliar para converter objeto Parcela em dict serializável
     def parcela_to_dict(p):
         return {
@@ -123,7 +123,7 @@ def index():
                 'quantidade_parcelas': p.cliente.quantidade_parcelas
             }
         }
-    
+
     return render_template('index.html',
                          vence_hoje=[parcela_to_dict(p) for p in vence_hoje],
                          esta_semana=[parcela_to_dict(p) for p in esta_semana],
@@ -226,6 +226,27 @@ def api_lembretes():
             'telefone': p.cliente.telefone
         })
     return {'lembretes': resultado}
+
+# --- NOVA API: TODAS AS PARCELAS PENDENTES (SEM LIMITE DE DATA) ---
+@app.route('/api/todas-parcelas')
+def api_todas_parcelas():
+    parcelas = Parcela.query.filter_by(pago=False).order_by(Parcela.data_vencimento).all()
+    resultado = []
+    for p in parcelas:
+        resultado.append({
+            'id': p.id,
+            'numero': p.numero,
+            'valor': p.valor,
+            'data_vencimento': p.data_vencimento.isoformat(),
+            'cliente': {
+                'id': p.cliente.id,
+                'nome': p.cliente.nome,
+                'telefone': p.cliente.telefone,
+                'carro': p.cliente.carro,
+                'quantidade_parcelas': p.cliente.quantidade_parcelas
+            }
+        })
+    return {'parcelas': resultado}
 
 # --- VERIFICAÇÃO DIÁRIA (LOG) ---
 def verificar_lembretes():
