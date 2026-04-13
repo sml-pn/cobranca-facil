@@ -3,149 +3,245 @@
 {% block title %}Dashboard - Cobrança Fácil{% endblock %}
 
 {% block content %}
-<!-- Cards de Resumo -->
+<!-- Cards de Resumo (agora clicáveis para filtrar) -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 25px;">
-    <div class="card" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #dc3545, #c82333); color: white;">
-        <i class="fas fa-exclamation-triangle" style="font-size: 2rem;"></i>
-        <h3 style="margin: 10px 0; font-size: 2rem;">{{ vence_hoje|length }}</h3>
-        <p>Vence HOJE</p>
-    </div>
-    <div class="card" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #fd7e14, #e66a00); color: white;">
-        <i class="fas fa-calendar-week" style="font-size: 2rem;"></i>
-        <h3 style="margin: 10px 0; font-size: 2rem;">{{ esta_semana|length }}</h3>
-        <p>Esta Semana</p>
-    </div>
-    <div class="card" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #ffc107, #e0a800); color: #1e293b;">
-        <i class="fas fa-hourglass-end" style="font-size: 2rem;"></i>
+    <!-- Card Vencidas (Vermelho) -->
+    <div class="card filter-card" data-filter="vencidas" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #dc3545, #c82333); color: white; cursor: pointer; transition: transform 0.2s;">
+        <i class="fas fa-exclamation-circle" style="font-size: 2rem;"></i>
         <h3 style="margin: 10px 0; font-size: 2rem;">{{ vencidas|length }}</h3>
         <p>Vencidas</p>
     </div>
-    <div class="card" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #28a745, #218838); color: white;">
+    
+    <!-- Card Vence HOJE (Laranja) -->
+    <div class="card filter-card" data-filter="hoje" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #fd7e14, #e66a00); color: white; cursor: pointer; transition: transform 0.2s;">
+        <i class="fas fa-bell" style="font-size: 2rem;"></i>
+        <h3 style="margin: 10px 0; font-size: 2rem;">{{ vence_hoje|length }}</h3>
+        <p>Vence HOJE</p>
+    </div>
+    
+    <!-- Card Esta Semana (Amarelo) -->
+    <div class="card filter-card" data-filter="semana" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #ffc107, #e0a800); color: #1e293b; cursor: pointer; transition: transform 0.2s;">
+        <i class="fas fa-calendar-alt" style="font-size: 2rem;"></i>
+        <h3 style="margin: 10px 0; font-size: 2rem;">{{ esta_semana|length }}</h3>
+        <p>Esta Semana</p>
+    </div>
+    
+    <!-- Card Total a Receber (Verde - remove filtro) -->
+    <div class="card filter-card" data-filter="todas" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #28a745, #218838); color: white; cursor: pointer; transition: transform 0.2s;">
         <i class="fas fa-hand-holding-usd" style="font-size: 2rem;"></i>
         <h3 style="margin: 10px 0; font-size: 1.4rem;">{{ total_receber|real }}</h3>
         <p>Total a Receber</p>
     </div>
 </div>
 
-<!-- Parcelas Vencidas (Atrasadas) -->
-{% if vencidas %}
-<div class="card">
-    <div class="card-header">
-        <h2 style="color: #dc3545;"><i class="fas fa-exclamation-circle"></i> Parcelas Vencidas (Atrasadas)</h2>
-        <span class="badge" style="background: #dc3545; color: white;">{{ vencidas|length }}</span>
-    </div>
-    <div class="parcela-list">
-        {% for p in vencidas %}
-        <div class="parcela-item" style="border-left: 5px solid #dc3545;">
-            <div class="parcela-info">
-                <h3>{{ p.cliente.nome }} <span style="font-weight: normal;">({{ p.cliente.carro }})</span></h3>
-                <div class="parcela-detail">
-                    <span><i class="fas fa-tag"></i> Parcela {{ p.numero }}/{{ p.cliente.quantidade_parcelas }}</span>
-                    <span><i class="fas fa-money-bill-wave"></i> {{ p.valor|real }}</span>
-                    <span><i class="fas fa-calendar-alt"></i> Venceu em {{ p.data_vencimento.strftime('%d/%m/%Y') }}</span>
-                    <span style="color: #dc3545; font-weight: bold;"><i class="fas fa-clock"></i> Atrasada há {{ (now.date() - p.data_vencimento).days }} dias</span>
-                    <span><i class="fas fa-phone-alt"></i> {{ p.cliente.telefone }}</span>
+<!-- Botão para limpar filtros (aparece quando um filtro está ativo) -->
+<div id="clearFilterContainer" style="display: none; margin-bottom: 15px; text-align: right;">
+    <button class="btn btn-outline" onclick="limparFiltro()" style="background: white;">
+        <i class="fas fa-times"></i> Limpar filtro
+    </button>
+</div>
+
+<!-- Container onde as parcelas serão exibidas dinamicamente -->
+<div id="parcelasContainer"></div>
+
+<script>
+    // Dados brutos vindos do backend
+    const parcelasData = {
+        vencidas: {{ vencidas|tojson }},
+        hoje: {{ vence_hoje|tojson }},
+        semana: {{ esta_semana|tojson }}
+    };
+    
+    // Estado atual do filtro ('todas', 'vencidas', 'hoje', 'semana')
+    let filtroAtual = 'todas';
+    
+    // Função para renderizar as parcelas com base no filtro
+    function renderizarParcelas(filtro) {
+        const container = document.getElementById('parcelasContainer');
+        const clearBtn = document.getElementById('clearFilterContainer');
+        
+        let parcelas = [];
+        let titulo = '';
+        let corDestaque = '';
+        
+        if (filtro === 'vencidas') {
+            parcelas = parcelasData.vencidas;
+            titulo = 'Parcelas Vencidas (Atrasadas)';
+            corDestaque = '#dc3545';
+            clearBtn.style.display = 'block';
+        } else if (filtro === 'hoje') {
+            parcelas = parcelasData.hoje;
+            titulo = 'Parcelas que Vencem HOJE';
+            corDestaque = '#fd7e14';
+            clearBtn.style.display = 'block';
+        } else if (filtro === 'semana') {
+            parcelas = parcelasData.semana.filter(p => {
+                const hoje = new Date().toISOString().split('T')[0];
+                return p.data_vencimento !== hoje;
+            });
+            titulo = 'Vencimentos nos Próximos 7 Dias';
+            corDestaque = '#ffc107';
+            clearBtn.style.display = 'block';
+        } else {
+            // 'todas' - combina todas sem duplicar
+            const todas = [
+                ...parcelasData.vencidas,
+                ...parcelasData.hoje,
+                ...parcelasData.semana.filter(p => p.data_vencimento !== new Date().toISOString().split('T')[0])
+            ];
+            // Remove duplicatas (baseado no ID)
+            parcelas = todas.filter((p, index, self) => 
+                index === self.findIndex(t => t.id === p.id)
+            );
+            titulo = 'Todas as Parcelas Pendentes';
+            corDestaque = '#2a5298';
+            clearBtn.style.display = 'none';
+        }
+        
+        if (parcelas.length === 0) {
+            container.innerHTML = `
+                <div class="card">
+                    <div style="text-align: center; padding: 2rem; color: #64748b;">
+                        <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 1rem; color: #28a745;"></i>
+                        <p>Nenhuma parcela neste filtro!</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Ordena por data de vencimento (mais próximas primeiro)
+        parcelas.sort((a, b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
+        
+        // Constrói o HTML
+        let html = `
+            <div class="card">
+                <div class="card-header">
+                    <h2 style="color: ${corDestaque};"><i class="fas fa-${filtro === 'vencidas' ? 'exclamation-circle' : (filtro === 'hoje' ? 'bell' : 'calendar-alt')}"></i> ${titulo}</h2>
+                    <span class="badge" style="background: ${corDestaque}; color: white;">${parcelas.length}</span>
+                </div>
+                <div class="parcela-list">
+        `;
+        
+        parcelas.forEach(p => {
+            const diasRestantes = Math.ceil((new Date(p.data_vencimento) - new Date()) / (1000 * 60 * 60 * 24));
+            let statusTexto = '';
+            let statusClass = '';
+            
+            if (p.data_vencimento < new Date().toISOString().split('T')[0]) {
+                statusTexto = `Atrasada há ${Math.abs(diasRestantes)} dias`;
+                statusClass = 'style="color: #dc3545; font-weight: bold;"';
+            } else if (diasRestantes === 0) {
+                statusTexto = 'Vence HOJE!';
+                statusClass = 'style="color: #dc3545; font-weight: bold;"';
+            } else if (diasRestantes === 1) {
+                statusTexto = 'Vence AMANHÃ';
+                statusClass = 'style="color: #fd7e14; font-weight: bold;"';
+            } else {
+                statusTexto = `Faltam ${diasRestantes} dias`;
+                statusClass = '';
+            }
+            
+            // Define a cor da borda esquerda conforme o status
+            let borderColor = '#ffc107'; // amarelo padrão
+            if (p.data_vencimento < new Date().toISOString().split('T')[0]) {
+                borderColor = '#dc3545'; // vermelho para vencidas
+            } else if (diasRestantes === 0) {
+                borderColor = '#fd7e14'; // laranja para hoje
+            }
+            
+            // Monta a mensagem do WhatsApp conforme o status
+            let whatsappMsg = '';
+            if (p.data_vencimento < new Date().toISOString().split('T')[0]) {
+                whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
+            } else if (diasRestantes === 0) {
+                whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence HOJE (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Efetue o pagamento.`;
+            } else {
+                whatsappMsg = `Olá ${p.cliente.nome}, lembrete: a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence em ${diasRestantes} dias (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
+            }
+            
+            html += `
+                <div class="parcela-item" style="border-left: 5px solid ${borderColor};">
+                    <div class="parcela-info">
+                        <h3>${p.cliente.nome} <span style="font-weight: normal;">(${p.cliente.carro})</span></h3>
+                        <div class="parcela-detail">
+                            <span><i class="fas fa-tag"></i> Parcela ${p.numero}/${p.cliente.quantidade_parcelas}</span>
+                            <span><i class="fas fa-money-bill-wave"></i> R$ ${p.valor.toFixed(2).replace('.', ',')}</span>
+                            <span><i class="fas fa-calendar-alt"></i> Vence ${p.data_vencimento.split('-').reverse().join('/')}</span>
+                            <span ${statusClass}><i class="fas fa-clock"></i> ${statusTexto}</span>
+                            <span><i class="fas fa-phone-alt"></i> ${p.cliente.telefone}</span>
+                        </div>
+                    </div>
+                    <div class="parcela-actions">
+                        <a href="/parcela/pagar/${p.id}" class="btn btn-success" onclick="return confirm('Confirmar pagamento?')">
+                            <i class="fas fa-check-circle"></i> Marcar Paga
+                        </a>
+                        <a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}" 
+                           target="_blank" class="btn btn-outline" style="background: #25D366; color: white; border: none;">
+                            <i class="fab fa-whatsapp"></i> Notificar
+                        </a>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
                 </div>
             </div>
-            <div class="parcela-actions">
-                <a href="{{ url_for('pagar_parcela', id=p.id) }}" class="btn btn-success" onclick="return confirm('Confirmar pagamento da parcela {{ p.numero }}/{{ p.cliente.quantidade_parcelas }} de {{ p.cliente.nome }}?')">
-                    <i class="fas fa-check-circle"></i> Marcar Paga
-                </a>
-                <a href="https://wa.me/55{{ p.cliente.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}?text={{ ('Olá ' + p.cliente.nome + ', a parcela ' + p.numero|string + '/' + p.cliente.quantidade_parcelas|string + ' do contrato ' + p.cliente.carro + ' venceu em ' + p.data_vencimento.strftime('%d/%m/%Y') + ' e está em atraso. Valor: ' + p.valor|real + '. Total financiado: ' + p.cliente.valor_total|real + '. Já foram pagas ' + p.cliente.parcelas|selectattr('pago')|list|length|string + ' parcelas. Faltam ' + (p.cliente.quantidade_parcelas - p.cliente.parcelas|selectattr('pago')|list|length)|string + ' parcelas. Regularize o pagamento.')|urlencode }}" 
-                   target="_blank" class="btn btn-outline" style="background: #25D366; color: white; border: none;">
-                    <i class="fab fa-whatsapp"></i> Cobrar
-                </a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
+        `;
+        
+        container.innerHTML = html;
+    }
+    
+    // Função para aplicar filtro
+    function aplicarFiltro(filtro) {
+        filtroAtual = filtro;
+        renderizarParcelas(filtro);
+        
+        // Destaca o card ativo
+        document.querySelectorAll('.filter-card').forEach(card => {
+            card.style.opacity = '0.7';
+            card.style.transform = 'scale(0.98)';
+        });
+        const activeCard = document.querySelector(`.filter-card[data-filter="${filtro}"]`);
+        if (activeCard) {
+            activeCard.style.opacity = '1';
+            activeCard.style.transform = 'scale(1.02)';
+        }
+    }
+    
+    function limparFiltro() {
+        aplicarFiltro('todas');
+    }
+    
+    // Adiciona event listeners aos cards
+    document.querySelectorAll('.filter-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const filtro = this.dataset.filter;
+            aplicarFiltro(filtro);
+        });
+        
+        // Efeito hover
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+        });
+        card.addEventListener('mouseleave', function() {
+            if (this.dataset.filter !== filtroAtual) {
+                this.style.transform = 'scale(1)';
+            }
+        });
+    });
+    
+    // Inicializa mostrando todas as parcelas
+    renderizarParcelas('todas');
+</script>
 
-<!-- Parcelas que Vencem Hoje -->
-{% if vence_hoje %}
-<div class="card">
-    <div class="card-header">
-        <h2 style="color: #dc3545;"><i class="fas fa-bell"></i> Vencem HOJE</h2>
-        <span class="badge" style="background: #dc3545; color: white;">{{ vence_hoje|length }}</span>
-    </div>
-    <div class="parcela-list">
-        {% for p in vence_hoje %}
-        <div class="parcela-item" style="border-left: 5px solid #dc3545;">
-            <div class="parcela-info">
-                <h3>{{ p.cliente.nome }} <span style="font-weight: normal;">({{ p.cliente.carro }})</span></h3>
-                <div class="parcela-detail">
-                    <span><i class="fas fa-tag"></i> Parcela {{ p.numero }}/{{ p.cliente.quantidade_parcelas }}</span>
-                    <span><i class="fas fa-money-bill-wave"></i> {{ p.valor|real }}</span>
-                    <span><i class="fas fa-calendar-alt"></i> Vence HOJE ({{ p.data_vencimento.strftime('%d/%m/%Y') }})</span>
-                    <span><i class="fas fa-phone-alt"></i> {{ p.cliente.telefone }}</span>
-                </div>
-            </div>
-            <div class="parcela-actions">
-                <a href="{{ url_for('pagar_parcela', id=p.id) }}" class="btn btn-success" onclick="return confirm('Confirmar pagamento da parcela {{ p.numero }}/{{ p.cliente.quantidade_parcelas }} de {{ p.cliente.nome }}?')">
-                    <i class="fas fa-check-circle"></i> Marcar Paga
-                </a>
-                <a href="https://wa.me/55{{ p.cliente.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}?text={{ ('Olá ' + p.cliente.nome + ', lembrete: a parcela ' + p.numero|string + '/' + p.cliente.quantidade_parcelas|string + ' do contrato ' + p.cliente.carro + ' vence HOJE (' + p.data_vencimento.strftime('%d/%m/%Y') + '). Valor: ' + p.valor|real + '. Total financiado: ' + p.cliente.valor_total|real + '. Já foram pagas ' + p.cliente.parcelas|selectattr('pago')|list|length|string + ' parcelas. Faltam ' + (p.cliente.quantidade_parcelas - p.cliente.parcelas|selectattr('pago')|list|length)|string + ' parcelas. Efetue o pagamento hoje. Obrigado!')|urlencode }}" 
-                   target="_blank" class="btn btn-outline" style="background: #25D366; color: white; border: none;">
-                    <i class="fab fa-whatsapp"></i> Notificar
-                </a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-<!-- Parcelas Esta Semana (exclui as de hoje) -->
-{% set semana_sem_hoje = esta_semana | rejectattr('data_vencimento', 'equalto', now.date()) | list %}
-{% if semana_sem_hoje %}
-<div class="card">
-    <div class="card-header">
-        <h2><i class="fas fa-calendar-alt"></i> Vencimentos nos Próximos 7 Dias</h2>
-        <span class="badge">{{ semana_sem_hoje|length }}</span>
-    </div>
-    <div class="parcela-list">
-        {% for p in semana_sem_hoje %}
-        <div class="parcela-item">
-            <div class="parcela-info">
-                <h3>{{ p.cliente.nome }} <span style="font-weight: normal;">({{ p.cliente.carro }})</span></h3>
-                <div class="parcela-detail">
-                    <span><i class="fas fa-tag"></i> Parcela {{ p.numero }}/{{ p.cliente.quantidade_parcelas }}</span>
-                    <span><i class="fas fa-money-bill-wave"></i> {{ p.valor|real }}</span>
-                    <span><i class="fas fa-calendar-alt"></i> Vence {{ p.data_vencimento.strftime('%d/%m/%Y') }}</span>
-                    <span><i class="fas fa-clock"></i> 
-                        {% set dias = (p.data_vencimento - now.date()).days %}
-                        {% if dias == 1 %}
-                            <span style="color: #fd7e14; font-weight: bold;">Vence AMANHÃ</span>
-                        {% else %}
-                            Faltam {{ dias }} dias
-                        {% endif %}
-                    </span>
-                    <span><i class="fas fa-phone-alt"></i> {{ p.cliente.telefone }}</span>
-                </div>
-            </div>
-            <div class="parcela-actions">
-                <a href="{{ url_for('pagar_parcela', id=p.id) }}" class="btn btn-success" onclick="return confirm('Confirmar pagamento da parcela {{ p.numero }}/{{ p.cliente.quantidade_parcelas }} de {{ p.cliente.nome }}?')">
-                    <i class="fas fa-check-circle"></i> Marcar Paga
-                </a>
-                <a href="https://wa.me/55{{ p.cliente.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}?text={{ ('Olá ' + p.cliente.nome + ', lembrete amigável: a parcela ' + p.numero|string + '/' + p.cliente.quantidade_parcelas|string + ' do contrato ' + p.cliente.carro + ' vence em ' + (p.data_vencimento - now.date()).days|string + ' dias (' + p.data_vencimento.strftime('%d/%m/%Y') + '). Valor: ' + p.valor|real + '. Total financiado: ' + p.cliente.valor_total|real + '. Já foram pagas ' + p.cliente.parcelas|selectattr('pago')|list|length|string + ' parcelas. Faltam ' + (p.cliente.quantidade_parcelas - p.cliente.parcelas|selectattr('pago')|list|length)|string + ' parcelas. Obrigado!')|urlencode }}" 
-                   target="_blank" class="btn btn-outline" style="background: #25D366; color: white; border: none;">
-                    <i class="fab fa-whatsapp"></i> Notificar
-                </a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-<!-- Se não houver nenhuma parcela pendente -->
-{% if not vencidas and not vence_hoje and not semana_sem_hoje %}
-<div class="card">
-    <div style="text-align: center; padding: 2rem; color: #64748b;">
-        <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 1rem; color: #28a745;"></i>
-        <p>Nenhuma parcela pendente no momento!</p>
-    </div>
-</div>
-{% endif %}
+<style>
+    .filter-card {
+        transition: all 0.2s ease;
+    }
+    .filter-card:hover {
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+</style>
 {% endblock %}
