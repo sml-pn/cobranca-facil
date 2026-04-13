@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from sqlalchemy import func
 import atexit
 import calendar
 import pytz
@@ -84,31 +85,54 @@ def hoje_sp():
 def inject_now():
     return {'now': agora_sp()}
 
+# --- FUNÇÃO AUXILIAR: PRÓXIMA PARCELA PENDENTE DE CADA CLIENTE ---
+def get_proximas_parcelas(filtro_data=None):
+    """
+    Retorna uma lista com a próxima parcela pendente de cada cliente.
+    Se filtro_data for fornecido (ex: 'hoje', 'semana', 'vencidas'), filtra por data.
+    """
+    hoje = hoje_sp()
+    subquery = db.session.query(
+        Parcela.cliente_id,
+        func.min(Parcela.data_vencimento).label('proxima_data')
+    ).filter(Parcela.pago == False).group_by(Parcela.cliente_id).subquery()
+
+    query = Parcela.query.join(
+        subquery,
+        (Parcela.cliente_id == subquery.c.cliente_id) &
+        (Parcela.data_vencimento == subquery.c.proxima_data) &
+        (Parcela.pago == False)
+    )
+
+    if filtro_data == 'vencidas':
+        query = query.filter(Parcela.data_vencimento < hoje)
+    elif filtro_data == 'hoje':
+        query = query.filter(Parcela.data_vencimento == hoje)
+    elif filtro_data == 'semana':
+        limite = hoje + timedelta(days=7)
+        query = query.filter(Parcela.data_vencimento.between(hoje, limite))
+    # Se filtro_data for None ou 'todas', não aplica filtro adicional
+
+    return query.order_by(Parcela.data_vencimento).all()
+
 # --- ROTAS ---
 @app.route('/')
 def index():
     hoje = hoje_sp()
 
-    vence_hoje = Parcela.query.filter(
-        Parcela.data_vencimento == hoje,
-        Parcela.pago == False
-    ).order_by(Parcela.data_vencimento).all()
-
+    # Para os cards de resumo, ainda precisamos de todas as parcelas (para contagens e total)
+    vence_hoje_todas = Parcela.query.filter(Parcela.data_vencimento == hoje, Parcela.pago == False).all()
     limite = hoje + timedelta(days=7)
-    esta_semana = Parcela.query.filter(
-        Parcela.data_vencimento.between(hoje, limite),
-        Parcela.pago == False
-    ).order_by(Parcela.data_vencimento).all()
+    esta_semana_todas = Parcela.query.filter(Parcela.data_vencimento.between(hoje, limite), Parcela.pago == False).all()
+    vencidas_todas = Parcela.query.filter(Parcela.data_vencimento < hoje, Parcela.pago == False).all()
+    pendentes_todas = Parcela.query.filter_by(pago=False).all()
+    total_receber = sum(p.valor for p in pendentes_todas)
 
-    vencidas = Parcela.query.filter(
-        Parcela.data_vencimento < hoje,
-        Parcela.pago == False
-    ).order_by(Parcela.data_vencimento).all()
+    # Para a lista, pegamos apenas a próxima parcela de cada cliente (por categoria)
+    proximas_vencidas = get_proximas_parcelas('vencidas')
+    proximas_hoje = get_proximas_parcelas('hoje')
+    proximas_semana = get_proximas_parcelas('semana')
 
-    pendentes = Parcela.query.filter_by(pago=False).all()
-    total_receber = sum(p.valor for p in pendentes)
-
-    # Função auxiliar para converter objeto Parcela em dict serializável
     def parcela_to_dict(p):
         return {
             'id': p.id,
@@ -125,11 +149,15 @@ def index():
         }
 
     return render_template('index.html',
-                         vence_hoje=[parcela_to_dict(p) for p in vence_hoje],
-                         esta_semana=[parcela_to_dict(p) for p in esta_semana],
-                         vencidas=[parcela_to_dict(p) for p in vencidas],
+                         vence_hoje=[parcela_to_dict(p) for p in proximas_hoje],
+                         esta_semana=[parcela_to_dict(p) for p in proximas_semana],
+                         vencidas=[parcela_to_dict(p) for p in proximas_vencidas],
                          total_receber=total_receber,
-                         total_pendentes=len(pendentes))
+                         total_pendentes=len(pendentes_todas),
+                         # Para os números dos cards, usamos as contagens reais de todas as parcelas
+                         count_vencidas=len(vencidas_todas),
+                         count_hoje=len(vence_hoje_todas),
+                         count_semana=len(esta_semana_todas))
 
 @app.route('/clientes')
 def listar_clientes():
@@ -227,10 +255,10 @@ def api_lembretes():
         })
     return {'lembretes': resultado}
 
-# --- NOVA API: TODAS AS PARCELAS PENDENTES (SEM LIMITE DE DATA) ---
 @app.route('/api/todas-parcelas')
 def api_todas_parcelas():
-    parcelas = Parcela.query.filter_by(pago=False).order_by(Parcela.data_vencimento).all()
+    # Retorna apenas a próxima parcela pendente de cada cliente
+    parcelas = get_proximas_parcelas()  # sem filtro, todas as próximas parcelas
     resultado = []
     for p in parcelas:
         resultado.append({

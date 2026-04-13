@@ -7,17 +7,17 @@
 <div class="kpi-grid">
     <div class="kpi-card filter-chip-card" data-filter="vencidas" style="background: linear-gradient(135deg, #dc3545, #c82333);">
         <i class="fas fa-exclamation-circle"></i>
-        <h3>{{ vencidas|length }}</h3>
+        <h3>{{ count_vencidas }}</h3>
         <p>Vencidas</p>
     </div>
     <div class="kpi-card filter-chip-card" data-filter="hoje" style="background: linear-gradient(135deg, #fd7e14, #e66a00);">
         <i class="fas fa-bell"></i>
-        <h3>{{ vence_hoje|length }}</h3>
+        <h3>{{ count_hoje }}</h3>
         <p>Vence HOJE</p>
     </div>
     <div class="kpi-card filter-chip-card" data-filter="semana" style="background: linear-gradient(135deg, #ffc107, #e0a800); color: #1e293b;">
         <i class="fas fa-calendar-alt"></i>
-        <h3>{{ esta_semana|length }}</h3>
+        <h3>{{ count_semana }}</h3>
         <p>Esta Semana</p>
     </div>
     <div class="kpi-card filter-chip-card" data-filter="todas" style="background: linear-gradient(135deg, #28a745, #218838);">
@@ -45,17 +45,14 @@
     </div>
 </div>
 
-<!-- Container das Parcelas -->
 <div id="parcelasContainer"></div>
 
-<!-- Botão Carregar Mais -->
 <div id="loadMoreContainer" style="text-align: center; margin-top: 20px; display: none;">
-    <button class="btn btn-outline" id="loadMoreBtn" onclick="carregarMais()">
+    <button class="btn btn-outline" onclick="carregarMais()">
         <i class="fas fa-chevron-down"></i> Carregar mais parcelas
     </button>
 </div>
 
-<!-- Botão de Ajuda Instalação -->
 <div id="installHelpButton" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
     <button onclick="showInstallGuide()" style="background: #1e3c72; color: white; border: none; padding: 12px 20px; border-radius: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: bold; cursor: pointer;">
         ⬇️ Como baixar o App
@@ -93,26 +90,22 @@
 </style>
 
 <script>
-    // Dados do backend (parciais: vencidas, hoje, semana)
     const dadosParciais = {
         vencidas: {{ vencidas|tojson }},
         hoje: {{ vence_hoje|tojson }},
         semana: {{ esta_semana|tojson }}
     };
 
-    // Estado global
-    let todasParcelas = [];           // Será preenchido via API
+    let todasParcelas = [];
     let filtroAtual = 'todas';
     let parcelasFiltradas = [];
     let paginaAtual = 1;
     const ITENS_POR_PAGINA = 10;
-
     const container = document.getElementById('parcelasContainer');
     const loadMoreContainer = document.getElementById('loadMoreContainer');
     const ordenacaoSelect = document.getElementById('ordenacao');
     const installHelpBtn = document.getElementById('installHelpButton');
 
-    // Exibe botão de ajuda no mobile
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         installHelpBtn.style.display = 'block';
     }
@@ -125,21 +118,17 @@
         alert(message);
     };
 
-    // Busca todas as parcelas pendentes (sem limite de data)
     async function carregarTodasParcelas() {
         try {
             const response = await fetch('/api/todas-parcelas');
             const data = await response.json();
             todasParcelas = data.parcelas || [];
-            console.log('Todas as parcelas carregadas:', todasParcelas.length);
         } catch (error) {
-            console.error('Erro ao carregar todas as parcelas:', error);
-            // Fallback: combina os dados parciais
             const ids = new Set();
             todasParcelas = [...dadosParciais.vencidas, ...dadosParciais.hoje, ...dadosParciais.semana]
                 .filter(p => ids.has(p.id) ? false : ids.add(p.id));
         }
-        aplicarFiltro('todas'); // Reaplica o filtro inicial
+        aplicarFiltro('todas');
     }
 
     function ordenarParcelas(parcelas, criterio) {
@@ -155,7 +144,7 @@
         if (filtroAtual === 'vencidas') parcelas = dadosParciais.vencidas;
         else if (filtroAtual === 'hoje') parcelas = dadosParciais.hoje;
         else if (filtroAtual === 'semana') parcelas = dadosParciais.semana;
-        else parcelas = todasParcelas; // "todas" usa a lista completa
+        else parcelas = todasParcelas;
 
         parcelasFiltradas = ordenarParcelas(parcelas, ordenacaoSelect.value);
         paginaAtual = 1;
@@ -173,10 +162,10 @@
         }
 
         let titulo = '', cor = '', icone = '';
-        if (filtroAtual === 'vencidas') { titulo='Parcelas Vencidas'; cor='#dc3545'; icone='exclamation-circle'; }
-        else if (filtroAtual === 'hoje') { titulo='Vencem HOJE'; cor='#fd7e14'; icone='bell'; }
-        else if (filtroAtual === 'semana') { titulo='Próximos 7 Dias'; cor='#ffc107'; icone='calendar-alt'; }
-        else { titulo='Todas as Pendentes'; cor='#2a5298'; icone='list'; }
+        if (filtroAtual === 'vencidas') { titulo='Próximas Parcelas Vencidas'; cor='#dc3545'; icone='exclamation-circle'; }
+        else if (filtroAtual === 'hoje') { titulo='Próximas Parcelas - Vencem HOJE'; cor='#fd7e14'; icone='bell'; }
+        else if (filtroAtual === 'semana') { titulo='Próximas Parcelas - Esta Semana'; cor='#ffc107'; icone='calendar-alt'; }
+        else { titulo='Próximas Parcelas de Cada Cliente'; cor='#2a5298'; icone='list'; }
 
         let html = `<div class="card"><div class="card-header"><h2 style="color:${cor};"><i class="fas fa-${icone}"></i> ${titulo}</h2><span class="badge" style="background:${cor};">${parcelasFiltradas.length}</span></div>`;
         html += `<table class="parcela-table"><thead><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
@@ -190,10 +179,8 @@
             else if (dias === 1) { statusTexto = 'Amanhã'; statusCor = '#fd7e14'; }
             else { statusTexto = `${dias} dias`; statusCor = '#64748b'; }
 
-            let whatsappMsg = '';
+            let whatsappMsg = `Olá ${p.cliente.nome}, lembrete da próxima parcela (${p.numero}/${p.cliente.quantidade_parcelas}) do contrato ${p.cliente.carro}. Vencimento: ${p.data_vencimento.split('-').reverse().join('/')}. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
             if (p.data_vencimento < hoje) whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
-            else if (dias === 0) whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence HOJE (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Efetue o pagamento.`;
-            else whatsappMsg = `Olá ${p.cliente.nome}, lembrete: a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence em ${dias} dias (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
 
             html += `<tr>`;
             html += `<td data-label="Cliente"><strong>${p.cliente.nome}</strong><br><small>${p.cliente.carro}</small></td>`;
@@ -201,7 +188,7 @@
             html += `<td data-label="Vencimento">${p.data_vencimento.split('-').reverse().join('/')}</td>`;
             html += `<td data-label="Valor">R$ ${p.valor.toFixed(2).replace('.', ',')}</td>`;
             html += `<td data-label="Status" style="color:${statusCor}; font-weight:500;">${statusTexto}</td>`;
-            html += `<td data-label="Ações"><div class="parcela-actions" style="display:flex; gap:6px;">`;
+            html += `<td data-label="Ações"><div style="display:flex; gap:6px;">`;
             html += `<a href="/parcela/pagar/${p.id}" class="btn-success" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i> Pagar</a>`;
             html += `<a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>`;
             html += `</div></td></tr>`;
@@ -224,7 +211,6 @@
         atualizarParcelasFiltradas();
     }
 
-    // Eventos
     document.querySelectorAll('.filter-chip').forEach(chip => {
         chip.addEventListener('click', () => aplicarFiltro(chip.dataset.filter));
     });
@@ -233,7 +219,6 @@
     });
     ordenacaoSelect.addEventListener('change', () => atualizarParcelasFiltradas());
 
-    // Inicialização: carrega todas as parcelas primeiro
     carregarTodasParcelas();
 </script>
 {% endblock %}
