@@ -5,33 +5,25 @@
 {% block content %}
 <!-- KPIs Grid Responsivo -->
 <div class="kpi-grid">
-    <!-- Vencidas -->
     <div class="kpi-card filter-chip-card" data-filter="vencidas" style="background: linear-gradient(135deg, #dc3545, #c82333);">
         <i class="fas fa-exclamation-circle"></i>
         <h3>{{ vencidas|length }}</h3>
         <p>Vencidas</p>
-        <small>↑ 0% vs. mês ant.</small>
     </div>
-    <!-- Vence Hoje -->
     <div class="kpi-card filter-chip-card" data-filter="hoje" style="background: linear-gradient(135deg, #fd7e14, #e66a00);">
         <i class="fas fa-bell"></i>
         <h3>{{ vence_hoje|length }}</h3>
         <p>Vence HOJE</p>
-        <small>↑ 0% vs. mês ant.</small>
     </div>
-    <!-- Esta Semana -->
     <div class="kpi-card filter-chip-card" data-filter="semana" style="background: linear-gradient(135deg, #ffc107, #e0a800); color: #1e293b;">
         <i class="fas fa-calendar-alt"></i>
         <h3>{{ esta_semana|length }}</h3>
         <p>Esta Semana</p>
-        <small style="color: #1e293b;">↑ 0% vs. mês ant.</small>
     </div>
-    <!-- Total a Receber (remove filtro) -->
     <div class="kpi-card filter-chip-card" data-filter="todas" style="background: linear-gradient(135deg, #28a745, #218838);">
         <i class="fas fa-hand-holding-usd"></i>
         <h3>{{ total_receber|real }}</h3>
         <p>Total a Receber</p>
-        <small>↑ 0% vs. mês ant.</small>
     </div>
 </div>
 
@@ -63,7 +55,7 @@
     </button>
 </div>
 
-<!-- Botão de Ajuda Instalação (mobile) -->
+<!-- Botão de Ajuda Instalação -->
 <div id="installHelpButton" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
     <button onclick="showInstallGuide()" style="background: #1e3c72; color: white; border: none; padding: 12px 20px; border-radius: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: bold; cursor: pointer;">
         ⬇️ Como baixar o App
@@ -71,208 +63,84 @@
 </div>
 
 <style>
-    /* KPIs Grid Responsivo */
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-        margin-bottom: 25px;
-    }
-    @media (min-width: 768px) {
-        .kpi-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-    .kpi-card {
-        padding: 1.2rem;
-        text-align: center;
-        border-radius: 16px;
-        color: white;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .kpi-card i {
-        font-size: 2rem;
-        margin-bottom: 8px;
-    }
-    .kpi-card h3 {
-        margin: 10px 0 5px;
-        font-size: 2rem;
-        font-weight: 700;
-    }
-    .kpi-card p {
-        margin: 0;
-        font-weight: 500;
-    }
-    .kpi-card small {
-        display: block;
-        margin-top: 8px;
-        font-size: 0.75rem;
-        opacity: 0.9;
-    }
-    .kpi-card.active {
-        transform: scale(1.02);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    }
-
-    /* Chips de Filtro */
-    .filter-chips-container {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 20px;
-        gap: 15px;
-    }
-    .filter-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .filter-chip {
-        background: white;
-        border: 1px solid #cbd5e1;
-        color: #1e293b;
-        padding: 8px 16px;
-        border-radius: 40px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 0.9rem;
-    }
-    .filter-chip.active {
-        background: #1e3c72;
-        color: white;
-        border-color: #1e3c72;
-    }
-    .ordenacao-wrapper {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .ordenacao-wrapper select {
-        padding: 8px 12px;
-        border-radius: 20px;
-        border: 1px solid #cbd5e1;
-        background: white;
-        font-size: 0.9rem;
-    }
-
-    /* Tabela Responsiva */
-    .parcela-table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    .parcela-table thead {
-        background: #f8fafc;
-    }
-    .parcela-table th {
-        padding: 1rem;
-        text-align: left;
-        font-weight: 600;
-        color: #1e293b;
-        border-bottom: 2px solid #e2e8f0;
-    }
-    .parcela-table td {
-        padding: 1rem;
-        border-bottom: 1px solid #e2e8f0;
-        color: #334155;
-    }
-    .parcela-table tbody tr:hover {
-        background: #fafbff;
-    }
+    .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
+    @media (min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+    .kpi-card { padding: 1.2rem; text-align: center; border-radius: 16px; color: white; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .kpi-card i { font-size: 2rem; margin-bottom: 8px; }
+    .kpi-card h3 { margin: 10px 0 5px; font-size: 2rem; font-weight: 700; }
+    .kpi-card p { margin: 0; font-weight: 500; }
+    .kpi-card.active { transform: scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+    .filter-chips-container { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 15px; }
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .filter-chip { background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 8px 16px; border-radius: 40px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .filter-chip.active { background: #1e3c72; color: white; border-color: #1e3c72; }
+    .ordenacao-wrapper { display: flex; align-items: center; gap: 8px; }
+    .ordenacao-wrapper select { padding: 8px 12px; border-radius: 20px; border: 1px solid #cbd5e1; background: white; }
+    .parcela-table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .parcela-table thead { background: #f8fafc; }
+    .parcela-table th { padding: 1rem; text-align: left; font-weight: 600; color: #1e293b; border-bottom: 2px solid #e2e8f0; }
+    .parcela-table td { padding: 1rem; border-bottom: 1px solid #e2e8f0; color: #334155; }
+    .parcela-table tbody tr:hover { background: #fafbff; }
     @media (max-width: 767px) {
-        .parcela-table thead {
-            display: none;
-        }
-        .parcela-table tbody tr {
-            display: block;
-            margin-bottom: 15px;
-            border: 1px solid #e0e7ef;
-            border-radius: 12px;
-            padding: 12px;
-            background: white;
-        }
-        .parcela-table td {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px dashed #edf2f7;
-        }
-        .parcela-table td:last-child {
-            border-bottom: none;
-        }
-        .parcela-table td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: #1e293b;
-        }
-        .parcela-actions {
-            justify-content: flex-end;
-        }
+        .parcela-table thead { display: none; }
+        .parcela-table tbody tr { display: block; margin-bottom: 15px; border: 1px solid #e0e7ef; border-radius: 12px; padding: 12px; background: white; }
+        .parcela-table td { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #edf2f7; }
+        .parcela-table td:last-child { border-bottom: none; }
+        .parcela-table td::before { content: attr(data-label); font-weight: 600; color: #1e293b; }
     }
-
-    .parcela-actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-    .btn-success {
-        background: #28a745;
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 20px;
-        cursor: pointer;
-        font-size: 0.8rem;
-    }
-    .btn-whatsapp {
-        background: #25D366;
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 20px;
-        cursor: pointer;
-        font-size: 0.8rem;
-        text-decoration: none;
-    }
+    .btn-success { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; text-decoration: none; }
+    .btn-whatsapp { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; text-decoration: none; }
 </style>
 
 <script>
-    const parcelasData = {
+    // Dados do backend (parciais: vencidas, hoje, semana)
+    const dadosParciais = {
         vencidas: {{ vencidas|tojson }},
         hoje: {{ vence_hoje|tojson }},
         semana: {{ esta_semana|tojson }}
     };
 
+    // Estado global
+    let todasParcelas = [];           // Será preenchido via API
     let filtroAtual = 'todas';
     let parcelasFiltradas = [];
     let paginaAtual = 1;
     const ITENS_POR_PAGINA = 10;
+
     const container = document.getElementById('parcelasContainer');
     const loadMoreContainer = document.getElementById('loadMoreContainer');
     const ordenacaoSelect = document.getElementById('ordenacao');
     const installHelpBtn = document.getElementById('installHelpButton');
 
+    // Exibe botão de ajuda no mobile
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         installHelpBtn.style.display = 'block';
     }
     window.showInstallGuide = function() {
-        let message = "";
-        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            message = "📱 Para instalar no iPhone/iPad:\n\n1. Toque no ícone 'Compartilhar' (quadrado com seta) na barra inferior do Safari.\n2. Role e toque em 'Adicionar à Tela de Início'.\n3. Confirme tocando em 'Adicionar'.";
-        } else if (/Android/i.test(navigator.userAgent)) {
-            message = "📱 Para instalar no Android:\n\n1. Toque no menu (três pontinhos) do Chrome.\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'.\n3. Confirme a instalação.";
-        } else {
-            message = "💻 No PC: Clique no ícone de instalação (monitor com seta) na barra de endereço do Chrome/Edge.";
-        }
+        let message = /iPhone|iPad|iPod/i.test(navigator.userAgent) ?
+            "📱 Para instalar no iPhone/iPad:\n\n1. Toque no ícone 'Compartilhar' (quadrado com seta) na barra inferior do Safari.\n2. Role e toque em 'Adicionar à Tela de Início'.\n3. Confirme tocando em 'Adicionar'." :
+            (/Android/i.test(navigator.userAgent) ?
+            "📱 Para instalar no Android:\n\n1. Toque no menu (três pontinhos) do Chrome.\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'.\n3. Confirme a instalação." :
+            "💻 No PC: Clique no ícone de instalação (monitor com seta) na barra de endereço do Chrome/Edge.");
         alert(message);
     };
+
+    // Busca todas as parcelas pendentes (sem limite de data)
+    async function carregarTodasParcelas() {
+        try {
+            const response = await fetch('/api/todas-parcelas');
+            const data = await response.json();
+            todasParcelas = data.parcelas || [];
+            console.log('Todas as parcelas carregadas:', todasParcelas.length);
+        } catch (error) {
+            console.error('Erro ao carregar todas as parcelas:', error);
+            // Fallback: combina os dados parciais
+            const ids = new Set();
+            todasParcelas = [...dadosParciais.vencidas, ...dadosParciais.hoje, ...dadosParciais.semana]
+                .filter(p => ids.has(p.id) ? false : ids.add(p.id));
+        }
+        aplicarFiltro('todas'); // Reaplica o filtro inicial
+    }
 
     function ordenarParcelas(parcelas, criterio) {
         const copia = [...parcelas];
@@ -284,14 +152,11 @@
 
     function atualizarParcelasFiltradas() {
         let parcelas = [];
-        if (filtroAtual === 'vencidas') parcelas = parcelasData.vencidas;
-        else if (filtroAtual === 'hoje') parcelas = parcelasData.hoje;
-        else if (filtroAtual === 'semana') parcelas = parcelasData.semana;
-        else {
-            const todas = [...parcelasData.vencidas, ...parcelasData.hoje, ...parcelasData.semana];
-            const ids = new Set();
-            parcelas = todas.filter(p => ids.has(p.id) ? false : ids.add(p.id));
-        }
+        if (filtroAtual === 'vencidas') parcelas = dadosParciais.vencidas;
+        else if (filtroAtual === 'hoje') parcelas = dadosParciais.hoje;
+        else if (filtroAtual === 'semana') parcelas = dadosParciais.semana;
+        else parcelas = todasParcelas; // "todas" usa a lista completa
+
         parcelasFiltradas = ordenarParcelas(parcelas, ordenacaoSelect.value);
         paginaAtual = 1;
         renderizarParcelas();
@@ -316,8 +181,8 @@
         let html = `<div class="card"><div class="card-header"><h2 style="color:${cor};"><i class="fas fa-${icone}"></i> ${titulo}</h2><span class="badge" style="background:${cor};">${parcelasFiltradas.length}</span></div>`;
         html += `<table class="parcela-table"><thead><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
 
+        const hoje = new Date().toISOString().split('T')[0];
         parcelasPagina.forEach(p => {
-            const hoje = new Date().toISOString().split('T')[0];
             const dias = Math.ceil((new Date(p.data_vencimento) - new Date(hoje)) / 86400000);
             let statusTexto = '', statusCor = '';
             if (p.data_vencimento < hoje) { statusTexto = `Atrasada ${Math.abs(dias)}d`; statusCor = '#dc3545'; }
@@ -336,7 +201,7 @@
             html += `<td data-label="Vencimento">${p.data_vencimento.split('-').reverse().join('/')}</td>`;
             html += `<td data-label="Valor">R$ ${p.valor.toFixed(2).replace('.', ',')}</td>`;
             html += `<td data-label="Status" style="color:${statusCor}; font-weight:500;">${statusTexto}</td>`;
-            html += `<td data-label="Ações"><div class="parcela-actions">`;
+            html += `<td data-label="Ações"><div class="parcela-actions" style="display:flex; gap:6px;">`;
             html += `<a href="/parcela/pagar/${p.id}" class="btn-success" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i> Pagar</a>`;
             html += `<a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>`;
             html += `</div></td></tr>`;
@@ -368,7 +233,7 @@
     });
     ordenacaoSelect.addEventListener('change', () => atualizarParcelasFiltradas());
 
-    // Inicializar
-    atualizarParcelasFiltradas();
+    // Inicialização: carrega todas as parcelas primeiro
+    carregarTodasParcelas();
 </script>
 {% endblock %}
