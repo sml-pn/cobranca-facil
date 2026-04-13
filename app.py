@@ -88,30 +88,46 @@ def inject_now():
 @app.route('/')
 def index():
     hoje = hoje_sp()
-
+    
     vence_hoje = Parcela.query.filter(
         Parcela.data_vencimento == hoje,
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
-
+    
     limite = hoje + timedelta(days=7)
     esta_semana = Parcela.query.filter(
         Parcela.data_vencimento.between(hoje, limite),
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
-
+    
     vencidas = Parcela.query.filter(
         Parcela.data_vencimento < hoje,
         Parcela.pago == False
     ).order_by(Parcela.data_vencimento).all()
-
+    
     pendentes = Parcela.query.filter_by(pago=False).all()
     total_receber = sum(p.valor for p in pendentes)
-
+    
+    # Função auxiliar para converter objeto Parcela em dict serializável
+    def parcela_to_dict(p):
+        return {
+            'id': p.id,
+            'numero': p.numero,
+            'valor': p.valor,
+            'data_vencimento': p.data_vencimento.isoformat(),
+            'cliente': {
+                'id': p.cliente.id,
+                'nome': p.cliente.nome,
+                'telefone': p.cliente.telefone,
+                'carro': p.cliente.carro,
+                'quantidade_parcelas': p.cliente.quantidade_parcelas
+            }
+        }
+    
     return render_template('index.html',
-                         vence_hoje=vence_hoje,
-                         esta_semana=esta_semana,
-                         vencidas=vencidas,
+                         vence_hoje=[parcela_to_dict(p) for p in vence_hoje],
+                         esta_semana=[parcela_to_dict(p) for p in esta_semana],
+                         vencidas=[parcela_to_dict(p) for p in vencidas],
                          total_receber=total_receber,
                          total_pendentes=len(pendentes))
 
@@ -127,7 +143,6 @@ def novo_cliente():
         novo_id = (ultimo.id + 1) if ultimo else 1
         codigo = f"CLI-{novo_id:03d}"
 
-        # O valor_total vem do campo hidden já no formato numérico (ex: 1500.00)
         valor_total = float(request.form['valor_total'])
         quantidade = int(request.form['quantidade_parcelas'])
         valor_parcela = valor_total / quantidade
