@@ -61,6 +61,13 @@
     </button>
 </div>
 
+<!-- Botão de Ajuda para Instalação do App (flutuante) -->
+<div id="installHelpButton" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
+    <button onclick="showInstallGuide()" style="background: #1e3c72; color: white; border: none; padding: 12px 20px; border-radius: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: bold; cursor: pointer;">
+        ⬇️ Como baixar o App
+    </button>
+</div>
+
 <script>
     // Dados brutos vindos do backend
     const parcelasData = {
@@ -80,6 +87,25 @@
     const clearBtn = document.getElementById('clearFilterContainer');
     const loadMoreContainer = document.getElementById('loadMoreContainer');
     const ordenacaoSelect = document.getElementById('ordenacao');
+    const installHelpBtn = document.getElementById('installHelpButton');
+    
+    // Exibe o botão de instalação apenas em dispositivos móveis
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        installHelpBtn.style.display = 'block';
+    }
+    
+    // Função para mostrar guia de instalação
+    window.showInstallGuide = function() {
+        let message = "";
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            message = "📱 Para instalar no iPhone/iPad:\n\n1. Toque no ícone 'Compartilhar' (quadrado com seta) na barra inferior do Safari.\n2. Role e toque em 'Adicionar à Tela de Início'.\n3. Confirme tocando em 'Adicionar'.";
+        } else if (/Android/i.test(navigator.userAgent)) {
+            message = "📱 Para instalar no Android:\n\n1. Toque no menu (três pontinhos) do Chrome.\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'.\n3. Confirme a instalação.";
+        } else {
+            message = "💻 No PC: Clique no ícone de instalação (monitor com seta) na barra de endereço do Chrome/Edge.";
+        }
+        alert(message);
+    };
     
     // Função para ordenar parcelas
     function ordenarParcelas(parcelas, criterio) {
@@ -102,22 +128,22 @@
         } else if (filtroAtual === 'hoje') {
             parcelas = parcelasData.hoje;
         } else if (filtroAtual === 'semana') {
-            const hojeStr = new Date().toISOString().split('T')[0];
-            parcelas = parcelasData.semana.filter(p => p.data_vencimento !== hojeStr);
+            parcelas = parcelasData.semana;
         } else {
             // 'todas' - combina sem duplicar
-            const hojeStr = new Date().toISOString().split('T')[0];
             const todas = [
                 ...parcelasData.vencidas,
                 ...parcelasData.hoje,
-                ...parcelasData.semana.filter(p => p.data_vencimento !== hojeStr)
+                ...parcelasData.semana
             ];
-            parcelas = todas.filter((p, index, self) => 
-                index === self.findIndex(t => t.id === p.id)
-            );
+            const ids = new Set();
+            parcelas = todas.filter(p => {
+                if (ids.has(p.id)) return false;
+                ids.add(p.id);
+                return true;
+            });
         }
         
-        // Ordena conforme seleção
         parcelasFiltradas = ordenarParcelas(parcelas, ordenacaoSelect.value);
         paginaAtual = 1;
         renderizarParcelas();
@@ -145,35 +171,41 @@
         // Determina título e cor conforme filtro
         let titulo = '';
         let corDestaque = '';
+        let icone = '';
         if (filtroAtual === 'vencidas') {
             titulo = 'Parcelas Vencidas (Atrasadas)';
             corDestaque = '#dc3545';
+            icone = 'exclamation-circle';
         } else if (filtroAtual === 'hoje') {
             titulo = 'Parcelas que Vencem HOJE';
             corDestaque = '#fd7e14';
+            icone = 'bell';
         } else if (filtroAtual === 'semana') {
             titulo = 'Vencimentos nos Próximos 7 Dias';
             corDestaque = '#ffc107';
+            icone = 'calendar-alt';
         } else {
             titulo = 'Todas as Parcelas Pendentes';
             corDestaque = '#2a5298';
+            icone = 'list';
         }
         
         let html = `
             <div class="card">
                 <div class="card-header">
-                    <h2 style="color: ${corDestaque};"><i class="fas fa-${filtroAtual === 'vencidas' ? 'exclamation-circle' : (filtroAtual === 'hoje' ? 'bell' : 'calendar-alt')}"></i> ${titulo}</h2>
+                    <h2 style="color: ${corDestaque};"><i class="fas fa-${icone}"></i> ${titulo}</h2>
                     <span class="badge" style="background: ${corDestaque}; color: white;">${parcelasFiltradas.length}</span>
                 </div>
                 <div class="parcela-list">
         `;
         
         parcelasPagina.forEach(p => {
-            const diasRestantes = Math.ceil((new Date(p.data_vencimento) - new Date()) / (1000 * 60 * 60 * 24));
+            const hoje = new Date().toISOString().split('T')[0];
+            const diasRestantes = Math.ceil((new Date(p.data_vencimento) - new Date(hoje)) / (1000 * 60 * 60 * 24));
             let statusTexto = '';
             let statusClass = '';
             
-            if (p.data_vencimento < new Date().toISOString().split('T')[0]) {
+            if (p.data_vencimento < hoje) {
                 statusTexto = `Atrasada há ${Math.abs(diasRestantes)} dias`;
                 statusClass = 'style="color: #dc3545; font-weight: bold;"';
             } else if (diasRestantes === 0) {
@@ -188,14 +220,14 @@
             }
             
             let borderColor = '#ffc107';
-            if (p.data_vencimento < new Date().toISOString().split('T')[0]) {
+            if (p.data_vencimento < hoje) {
                 borderColor = '#dc3545';
             } else if (diasRestantes === 0) {
                 borderColor = '#fd7e14';
             }
             
             let whatsappMsg = '';
-            if (p.data_vencimento < new Date().toISOString().split('T')[0]) {
+            if (p.data_vencimento < hoje) {
                 whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
             } else if (diasRestantes === 0) {
                 whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence HOJE (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Efetue o pagamento.`;
@@ -239,11 +271,7 @@
         container.innerHTML = html;
         
         // Mostra/esconde botão "Carregar mais"
-        if (parcelasFiltradas.length > fim) {
-            loadMoreContainer.style.display = 'block';
-        } else {
-            loadMoreContainer.style.display = 'none';
-        }
+        loadMoreContainer.style.display = parcelasFiltradas.length > fim ? 'block' : 'none';
     }
     
     function carregarMais() {
