@@ -3,7 +3,7 @@
 {% block title %}Dashboard - Cobrança Fácil{% endblock %}
 
 {% block content %}
-<!-- Cards de Resumo (agora clicáveis para filtrar) -->
+<!-- Cards de Resumo (clicáveis para filtrar) -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 25px;">
     <!-- Card Vencidas (Vermelho) -->
     <div class="card filter-card" data-filter="vencidas" style="padding: 1.2rem; text-align: center; background: linear-gradient(135deg, #dc3545, #c82333); color: white; cursor: pointer; transition: transform 0.2s;">
@@ -34,15 +34,32 @@
     </div>
 </div>
 
-<!-- Botão para limpar filtros (aparece quando um filtro está ativo) -->
-<div id="clearFilterContainer" style="display: none; margin-bottom: 15px; text-align: right;">
-    <button class="btn btn-outline" onclick="limparFiltro()" style="background: white;">
-        <i class="fas fa-times"></i> Limpar filtro
-    </button>
+<!-- Barra de controles: ordenação e botão limpar filtro -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+    <div id="clearFilterContainer" style="display: none;">
+        <button class="btn btn-outline" onclick="limparFiltro()" style="background: white;">
+            <i class="fas fa-times"></i> Limpar filtro
+        </button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+        <label for="ordenacao" style="font-weight: 500; color: #1e293b;"><i class="fas fa-sort"></i> Ordenar por:</label>
+        <select id="ordenacao" class="form-control" style="width: auto; padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid #cbd5e1;">
+            <option value="data">Data (próximas primeiro)</option>
+            <option value="nome">Nome do cliente</option>
+            <option value="valor">Valor (maior)</option>
+        </select>
+    </div>
 </div>
 
-<!-- Container onde as parcelas serão exibidas dinamicamente -->
+<!-- Container das parcelas -->
 <div id="parcelasContainer"></div>
+
+<!-- Botão Carregar Mais -->
+<div id="loadMoreContainer" style="text-align: center; margin-top: 20px; display: none;">
+    <button class="btn btn-outline" id="loadMoreBtn" onclick="carregarMais()">
+        <i class="fas fa-chevron-down"></i> Carregar mais parcelas
+    </button>
+</div>
 
 <script>
     // Dados brutos vindos do backend
@@ -52,53 +69,67 @@
         semana: {{ esta_semana|tojson }}
     };
     
-    // Estado atual do filtro ('todas', 'vencidas', 'hoje', 'semana')
+    // Estado atual
     let filtroAtual = 'todas';
+    let parcelasFiltradas = [];
+    let paginaAtual = 1;
+    const ITENS_POR_PAGINA = 10;
     
-    // Função para renderizar as parcelas com base no filtro
-    function renderizarParcelas(filtro) {
-        const container = document.getElementById('parcelasContainer');
-        const clearBtn = document.getElementById('clearFilterContainer');
-        
+    // Elementos DOM
+    const container = document.getElementById('parcelasContainer');
+    const clearBtn = document.getElementById('clearFilterContainer');
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
+    const ordenacaoSelect = document.getElementById('ordenacao');
+    
+    // Função para ordenar parcelas
+    function ordenarParcelas(parcelas, criterio) {
+        const copia = [...parcelas];
+        if (criterio === 'data') {
+            copia.sort((a, b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
+        } else if (criterio === 'nome') {
+            copia.sort((a, b) => a.cliente.nome.localeCompare(b.cliente.nome));
+        } else if (criterio === 'valor') {
+            copia.sort((a, b) => b.valor - a.valor);
+        }
+        return copia;
+    }
+    
+    // Função para aplicar filtro e ordenação
+    function atualizarParcelasFiltradas() {
         let parcelas = [];
-        let titulo = '';
-        let corDestaque = '';
-        
-        if (filtro === 'vencidas') {
+        if (filtroAtual === 'vencidas') {
             parcelas = parcelasData.vencidas;
-            titulo = 'Parcelas Vencidas (Atrasadas)';
-            corDestaque = '#dc3545';
-            clearBtn.style.display = 'block';
-        } else if (filtro === 'hoje') {
+        } else if (filtroAtual === 'hoje') {
             parcelas = parcelasData.hoje;
-            titulo = 'Parcelas que Vencem HOJE';
-            corDestaque = '#fd7e14';
-            clearBtn.style.display = 'block';
-        } else if (filtro === 'semana') {
-            parcelas = parcelasData.semana.filter(p => {
-                const hoje = new Date().toISOString().split('T')[0];
-                return p.data_vencimento !== hoje;
-            });
-            titulo = 'Vencimentos nos Próximos 7 Dias';
-            corDestaque = '#ffc107';
-            clearBtn.style.display = 'block';
+        } else if (filtroAtual === 'semana') {
+            const hojeStr = new Date().toISOString().split('T')[0];
+            parcelas = parcelasData.semana.filter(p => p.data_vencimento !== hojeStr);
         } else {
-            // 'todas' - combina todas sem duplicar
+            // 'todas' - combina sem duplicar
+            const hojeStr = new Date().toISOString().split('T')[0];
             const todas = [
                 ...parcelasData.vencidas,
                 ...parcelasData.hoje,
-                ...parcelasData.semana.filter(p => p.data_vencimento !== new Date().toISOString().split('T')[0])
+                ...parcelasData.semana.filter(p => p.data_vencimento !== hojeStr)
             ];
-            // Remove duplicatas (baseado no ID)
             parcelas = todas.filter((p, index, self) => 
                 index === self.findIndex(t => t.id === p.id)
             );
-            titulo = 'Todas as Parcelas Pendentes';
-            corDestaque = '#2a5298';
-            clearBtn.style.display = 'none';
         }
         
-        if (parcelas.length === 0) {
+        // Ordena conforme seleção
+        parcelasFiltradas = ordenarParcelas(parcelas, ordenacaoSelect.value);
+        paginaAtual = 1;
+        renderizarParcelas();
+    }
+    
+    // Renderiza a página atual
+    function renderizarParcelas() {
+        const inicio = 0;
+        const fim = paginaAtual * ITENS_POR_PAGINA;
+        const parcelasPagina = parcelasFiltradas.slice(inicio, fim);
+        
+        if (parcelasFiltradas.length === 0) {
             container.innerHTML = `
                 <div class="card">
                     <div style="text-align: center; padding: 2rem; color: #64748b;">
@@ -107,23 +138,37 @@
                     </div>
                 </div>
             `;
+            loadMoreContainer.style.display = 'none';
             return;
         }
         
-        // Ordena por data de vencimento (mais próximas primeiro)
-        parcelas.sort((a, b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
+        // Determina título e cor conforme filtro
+        let titulo = '';
+        let corDestaque = '';
+        if (filtroAtual === 'vencidas') {
+            titulo = 'Parcelas Vencidas (Atrasadas)';
+            corDestaque = '#dc3545';
+        } else if (filtroAtual === 'hoje') {
+            titulo = 'Parcelas que Vencem HOJE';
+            corDestaque = '#fd7e14';
+        } else if (filtroAtual === 'semana') {
+            titulo = 'Vencimentos nos Próximos 7 Dias';
+            corDestaque = '#ffc107';
+        } else {
+            titulo = 'Todas as Parcelas Pendentes';
+            corDestaque = '#2a5298';
+        }
         
-        // Constrói o HTML
         let html = `
             <div class="card">
                 <div class="card-header">
-                    <h2 style="color: ${corDestaque};"><i class="fas fa-${filtro === 'vencidas' ? 'exclamation-circle' : (filtro === 'hoje' ? 'bell' : 'calendar-alt')}"></i> ${titulo}</h2>
-                    <span class="badge" style="background: ${corDestaque}; color: white;">${parcelas.length}</span>
+                    <h2 style="color: ${corDestaque};"><i class="fas fa-${filtroAtual === 'vencidas' ? 'exclamation-circle' : (filtroAtual === 'hoje' ? 'bell' : 'calendar-alt')}"></i> ${titulo}</h2>
+                    <span class="badge" style="background: ${corDestaque}; color: white;">${parcelasFiltradas.length}</span>
                 </div>
                 <div class="parcela-list">
         `;
         
-        parcelas.forEach(p => {
+        parcelasPagina.forEach(p => {
             const diasRestantes = Math.ceil((new Date(p.data_vencimento) - new Date()) / (1000 * 60 * 60 * 24));
             let statusTexto = '';
             let statusClass = '';
@@ -142,15 +187,13 @@
                 statusClass = '';
             }
             
-            // Define a cor da borda esquerda conforme o status
-            let borderColor = '#ffc107'; // amarelo padrão
+            let borderColor = '#ffc107';
             if (p.data_vencimento < new Date().toISOString().split('T')[0]) {
-                borderColor = '#dc3545'; // vermelho para vencidas
+                borderColor = '#dc3545';
             } else if (diasRestantes === 0) {
-                borderColor = '#fd7e14'; // laranja para hoje
+                borderColor = '#fd7e14';
             }
             
-            // Monta a mensagem do WhatsApp conforme o status
             let whatsappMsg = '';
             if (p.data_vencimento < new Date().toISOString().split('T')[0]) {
                 whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
@@ -187,18 +230,33 @@
         
         html += `
                 </div>
+                <div style="text-align: center; padding-top: 15px; color: #64748b; font-size: 0.9rem;">
+                    Mostrando ${parcelasPagina.length} de ${parcelasFiltradas.length} parcelas
+                </div>
             </div>
         `;
         
         container.innerHTML = html;
+        
+        // Mostra/esconde botão "Carregar mais"
+        if (parcelasFiltradas.length > fim) {
+            loadMoreContainer.style.display = 'block';
+        } else {
+            loadMoreContainer.style.display = 'none';
+        }
     }
     
-    // Função para aplicar filtro
+    function carregarMais() {
+        paginaAtual++;
+        renderizarParcelas();
+    }
+    
     function aplicarFiltro(filtro) {
         filtroAtual = filtro;
-        renderizarParcelas(filtro);
+        clearBtn.style.display = filtro === 'todas' ? 'none' : 'block';
+        atualizarParcelasFiltradas();
         
-        // Destaca o card ativo
+        // Destaca card ativo
         document.querySelectorAll('.filter-card').forEach(card => {
             card.style.opacity = '0.7';
             card.style.transform = 'scale(0.98)';
@@ -214,14 +272,11 @@
         aplicarFiltro('todas');
     }
     
-    // Adiciona event listeners aos cards
+    // Event listeners
     document.querySelectorAll('.filter-card').forEach(card => {
         card.addEventListener('click', function() {
-            const filtro = this.dataset.filter;
-            aplicarFiltro(filtro);
+            aplicarFiltro(this.dataset.filter);
         });
-        
-        // Efeito hover
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'scale(1.02)';
         });
@@ -232,8 +287,12 @@
         });
     });
     
-    // Inicializa mostrando todas as parcelas
-    renderizarParcelas('todas');
+    ordenacaoSelect.addEventListener('change', function() {
+        atualizarParcelasFiltradas();
+    });
+    
+    // Inicialização
+    atualizarParcelasFiltradas();
 </script>
 
 <style>
