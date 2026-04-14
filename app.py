@@ -8,6 +8,8 @@ from sqlalchemy import func
 import atexit
 import calendar
 import pytz
+import requests  # NOVO: para chamar a API do CallMeBot
+from urllib.parse import quote  # NOVO: para codificar a mensagem na URL
 
 app = Flask(__name__)
 app.secret_key = 'sua-chave-secreta-aqui-mude-para-algo-seguro'
@@ -111,16 +113,50 @@ def get_proximas_parcelas(filtro_data=None):
     elif filtro_data == 'semana':
         limite = hoje + timedelta(days=7)
         query = query.filter(Parcela.data_vencimento.between(hoje, limite))
-    # Se filtro_data for None ou 'todas', não aplica filtro adicional
 
     return query.order_by(Parcela.data_vencimento).all()
+
+# --- 🆕 FUNÇÃO DE ENVIO DE WHATSAPP VIA CALLMEBOT ---
+def enviar_whatsapp_callmebot(numero_destino, nome_cliente, parcela_num, parcela_total, carro, data_venc, valor):
+    """Envia uma mensagem de cobrança via CallMeBot."""
+    
+    api_key = os.environ.get('CALLMEBOT_API_KEY')
+    seu_numero = os.environ.get('CALLMEBOT_PHONE_NUMBER')
+    
+    if not api_key or not seu_numero:
+        print("Erro: Chave API ou número de telefone do CallMeBot não configurados.")
+        return False
+
+    # Formata a data para o padrão brasileiro
+    data_formatada = data_venc.strftime('%d/%m/%Y') if hasattr(data_venc, 'strftime') else data_venc
+    
+    # Formata o valor com vírgula decimal
+    valor_formatado = f"{valor:.2f}".replace('.', ',')
+    
+    # Monta a mensagem que será enviada
+    mensagem = (f"Olá {nome_cliente}, lembrete da próxima parcela ({parcela_num}/{parcela_total}) "
+                f"do contrato {carro}. Vencimento: {data_formatada}. Valor: R$ {valor_formatado}.")
+    
+    # Codifica a mensagem para ser enviada na URL
+    mensagem_codificada = quote(mensagem)
+    
+    # URL da API do CallMeBot
+    url = f"https://api.callmebot.com/whatsapp.php?phone={seu_numero}&text={mensagem_codificada}&apikey={api_key}"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        print(f"✅ WhatsApp enviado para {nome_cliente} ({numero_destino})")
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao enviar WhatsApp para {nome_cliente}: {e}")
+        return False
 
 # --- ROTAS ---
 @app.route('/')
 def index():
     hoje = hoje_sp()
 
-    # Para os cards de resumo, ainda precisamos de todas as parcelas (para contagens e total)
     vence_hoje_todas = Parcela.query.filter(Parcela.data_vencimento == hoje, Parcela.pago == False).all()
     limite = hoje + timedelta(days=7)
     esta_semana_todas = Parcela.query.filter(Parcela.data_vencimento.between(hoje, limite), Parcela.pago == False).all()
@@ -128,7 +164,6 @@ def index():
     pendentes_todas = Parcela.query.filter_by(pago=False).all()
     total_receber = sum(p.valor for p in pendentes_todas)
 
-    # Para a lista, pegamos apenas a próxima parcela de cada cliente (por categoria)
     proximas_vencidas = get_proximas_parcelas('vencidas')
     proximas_hoje = get_proximas_parcelas('hoje')
     proximas_semana = get_proximas_parcelas('semana')
@@ -154,7 +189,6 @@ def index():
                          vencidas=[parcela_to_dict(p) for p in proximas_vencidas],
                          total_receber=total_receber,
                          total_pendentes=len(pendentes_todas),
-                         # Para os números dos cards, usamos as contagens reais de todas as parcelas
                          count_vencidas=len(vencidas_todas),
                          count_hoje=len(vence_hoje_todas),
                          count_semana=len(esta_semana_todas))
@@ -257,8 +291,7 @@ def api_lembretes():
 
 @app.route('/api/todas-parcelas')
 def api_todas_parcelas():
-    # Retorna apenas a próxima parcela pendente de cada cliente
-    parcelas = get_proximas_parcelas()  # sem filtro, todas as próximas parcelas
+    parcelas = get_proximas_parcelas()
     resultado = []
     for p in parcelas:
         resultado.append({
@@ -276,7 +309,7 @@ def api_todas_parcelas():
         })
     return {'parcelas': resultado}
 
-# --- VERIFICAÇÃO DIÁRIA (LOG) ---
+# --- 🆕 VERIFICAÇÃO DIÁRIA COM ENVIO AUTOMÁTICO DE WHATSAPP ---
 def verificar_lembretes():
     with app.app_context():
         hoje = hoje_sp()
@@ -285,8 +318,26 @@ def verificar_lembretes():
             Parcela.data_vencimento == alvo,
             Parcela.pago == False
         ).all()
+        
         if parcelas:
             print(f"\n===== {len(parcelas)} LEMBRETES GERADOS =====")
+            for p in parcelas:
+                cliente = p.cliente
+                # Limpa o telefone (remove caracteres não numéricos)
+                telefone_limpo = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
+                
+                # Envia WhatsApp automaticamente
+                enviar_whatsapp_callmebot(
+                    numero_destino=telefone_limpo,
+                    nome_cliente=cliente.nome,
+                    parcela_num=p.numero,
+                    parcela_total=cliente.quantidade_parcelas,
+                    carro=cliente.carro,
+                    data_venc=p.data_vencimento,
+                    valor=p.valor
+                )
+        else:
+            print("Nenhum lembrete para hoje.")
 
 scheduler = BackgroundScheduler(timezone='UTC')
 scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0))
