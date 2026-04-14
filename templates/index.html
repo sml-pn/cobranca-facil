@@ -63,12 +63,25 @@
 </div>
 
 <style>
+    /* ===== CORREÇÕES DE VAZAMENTO ===== */
+    * {
+        box-sizing: border-box;
+    }
+    body, .main-content {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+    .main-content {
+        padding: 1rem;
+    }
+
     /* KPIs */
     .kpi-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;
         margin-bottom: 20px;
+        max-width: 100%;
     }
     @media (min-width: 640px) {
         .kpi-grid { grid-template-columns: repeat(4, 1fr); }
@@ -81,6 +94,8 @@
         cursor: pointer;
         transition: all 0.2s;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        min-width: 0; /* Evita que o conteúdo force largura */
+        word-break: break-word;
     }
     .kpi-card i { font-size: 1.8rem; margin-bottom: 5px; }
     .kpi-card h3 { margin: 5px 0; font-size: 1.8rem; font-weight: 700; }
@@ -95,11 +110,13 @@
         justify-content: space-between;
         margin-bottom: 15px;
         gap: 10px;
+        max-width: 100%;
     }
     .filter-chips {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
+        max-width: 100%;
     }
     .filter-chip {
         background: white;
@@ -112,6 +129,7 @@
         transition: all 0.2s;
         font-size: 0.9rem;
         white-space: nowrap;
+        max-width: 100%;
     }
     .filter-chip.active {
         background: #1e3c72;
@@ -133,6 +151,7 @@
         padding: 6px 0;
         font-size: 0.9rem;
         outline: none;
+        max-width: 120px;
     }
 
     /* Tabela/Cards */
@@ -143,6 +162,7 @@
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        table-layout: fixed; /* Força a tabela a respeitar larguras */
     }
     .parcela-table thead {
         background: #f8fafc;
@@ -154,18 +174,21 @@
         color: #1e293b;
         border-bottom: 2px solid #e2e8f0;
         font-size: 0.9rem;
+        word-break: break-word;
     }
     .parcela-table td {
         padding: 0.8rem;
         border-bottom: 1px solid #e2e8f0;
         color: #334155;
         font-size: 0.9rem;
+        word-break: break-word;
+        vertical-align: top;
     }
     .parcela-table tbody tr:hover {
         background: #fafbff;
     }
 
-    /* Mobile: transforma tabela em cards */
+    /* Mobile: cards empilhados sem vazamento */
     @media (max-width: 640px) {
         .parcela-table thead {
             display: none;
@@ -178,6 +201,7 @@
             padding: 12px;
             background: white;
             box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            max-width: 100%;
         }
         .parcela-table td {
             display: flex;
@@ -185,6 +209,7 @@
             padding: 10px 0;
             border-bottom: 1px dashed #edf2f7;
             gap: 10px;
+            max-width: 100%;
         }
         .parcela-table td:last-child {
             border-bottom: none;
@@ -195,9 +220,11 @@
             color: #1e293b;
             min-width: 90px;
             font-size: 0.85rem;
+            flex-shrink: 0;
         }
-        .parcela-table td[data-label="Ações"] {
-            flex-wrap: wrap;
+        .parcela-table td > * {
+            word-break: break-word;
+            max-width: calc(100% - 100px);
         }
         .parcela-actions {
             display: flex;
@@ -209,6 +236,19 @@
             width: 100%;
             text-align: center;
             justify-content: center;
+            white-space: normal;
+        }
+        /* Ajuste para o texto do cliente não vazar */
+        .cliente-nome {
+            font-weight: 600;
+            color: #0b1e33;
+            word-break: break-word;
+        }
+        .cliente-carro {
+            font-size: 0.8rem;
+            color: #64748b;
+            display: block;
+            word-break: break-word;
         }
     }
 
@@ -249,15 +289,21 @@
         border-radius: 40px;
         font-weight: 600;
         cursor: pointer;
+        max-width: 100%;
     }
 
     /* Ajustes gerais */
+    .card {
+        max-width: 100%;
+        overflow: hidden;
+    }
     .card-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 15px;
         flex-wrap: wrap;
+        max-width: 100%;
     }
     .badge {
         background: #e2e8f0;
@@ -266,15 +312,6 @@
         font-size: 0.8rem;
         font-weight: 600;
         color: #1e293b;
-    }
-    .cliente-nome {
-        font-weight: 600;
-        color: #0b1e33;
-    }
-    .cliente-carro {
-        font-size: 0.8rem;
-        color: #64748b;
-        display: block;
     }
 </style>
 
