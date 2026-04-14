@@ -3,7 +3,7 @@
 {% block title %}Dashboard - Cobrança Fácil{% endblock %}
 
 {% block content %}
-<!-- KPIs Grid Responsivo -->
+<!-- KPIs Grid -->
 <div class="kpi-grid">
     <div class="kpi-card filter-chip-card" data-filter="vencidas" style="background: linear-gradient(135deg, #dc3545, #8b1e1e);">
         <i class="fas fa-exclamation-circle"></i>
@@ -27,16 +27,16 @@
     </div>
 </div>
 
-<!-- Chips de Filtro -->
-<div class="filter-chips-container">
+<!-- Filtros e Ordenação -->
+<div class="filter-section">
     <div class="filter-chips">
-        <div class="filter-chip active" data-filter="todas">Todas</div>
-        <div class="filter-chip" data-filter="vencidas">Vencidas</div>
-        <div class="filter-chip" data-filter="hoje">Vence Hoje</div>
-        <div class="filter-chip" data-filter="semana">Esta Semana</div>
+        <span class="filter-chip active" data-filter="todas">Todas</span>
+        <span class="filter-chip" data-filter="vencidas">Vencidas</span>
+        <span class="filter-chip" data-filter="hoje">Vence Hoje</span>
+        <span class="filter-chip" data-filter="semana">Esta Semana</span>
     </div>
-    <div class="ordenacao-wrapper">
-        <label for="ordenacao"><i class="fas fa-sort"></i></label>
+    <div class="ordenacao-box">
+        <label for="ordenacao"><i class="fas fa-arrow-down-wide-short"></i></label>
         <select id="ordenacao">
             <option value="data">Data</option>
             <option value="nome">Nome</option>
@@ -45,341 +45,262 @@
     </div>
 </div>
 
-<!-- Container das Parcelas -->
-<div id="parcelasContainer"></div>
+<!-- Container de Cards -->
+<div id="cardsContainer" class="cards-grid"></div>
 
 <!-- Botão Carregar Mais -->
-<div id="loadMoreContainer" style="text-align: center; margin-top: 20px; display: none;">
-    <button class="btn btn-outline" onclick="carregarMais()">
-        <i class="fas fa-chevron-down"></i> Carregar mais
+<div id="loadMoreContainer" style="text-align: center; margin-top: 25px; display: none;">
+    <button class="btn-load-more" onclick="carregarMais()">
+        <i class="fas fa-chevron-down"></i> Carregar mais parcelas
     </button>
 </div>
 
-<!-- Botão de Ajuda Instalação (mobile) -->
-<div id="installHelpButton" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
-    <button onclick="showInstallGuide()" style="background: #1e3c72; color: white; border: none; padding: 12px 20px; border-radius: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: bold; cursor: pointer;">
-        ⬇️ Como baixar o App
+<!-- Botão de ajuda (instalação PWA) -->
+<div id="installHelpButton" class="install-help-btn">
+    <button onclick="showInstallGuide()">
+        <i class="fas fa-download"></i> Instalar App
     </button>
 </div>
 
 <style>
-    /* ===== RESET E CONTAINERS ===== */
-    * {
-        box-sizing: border-box;
-    }
-    body, .main-content {
-        max-width: 100%;
-        overflow-x: hidden;
-    }
-    .main-content {
-        padding: 1rem;
-    }
+    /* ===== RESET ===== */
+    * { box-sizing: border-box; }
+    body, .main-content { max-width: 100%; overflow-x: hidden; }
 
     /* ===== KPIs ===== */
     .kpi-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;
-        margin-bottom: 20px;
-        max-width: 100%;
+        margin-bottom: 25px;
     }
     @media (min-width: 640px) {
         .kpi-grid { grid-template-columns: repeat(4, 1fr); }
     }
     .kpi-card {
-        padding: 1rem 0.5rem;
+        padding: 1.2rem 0.5rem;
         text-align: center;
-        border-radius: 16px;
+        border-radius: 20px;
         color: white;
         cursor: pointer;
         transition: all 0.2s;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        min-width: 0;
-        word-break: break-word;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+        border: none;
     }
-    .kpi-card i { font-size: 1.8rem; margin-bottom: 5px; }
-    .kpi-card h3 { margin: 5px 0; font-size: 1.8rem; font-weight: 700; }
-    .kpi-card p { margin: 0; font-size: 0.9rem; font-weight: 500; }
-    .kpi-card.active { transform: scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+    .kpi-card i { font-size: 2rem; margin-bottom: 8px; }
+    .kpi-card h3 { font-size: 2rem; font-weight: 700; margin: 5px 0; }
+    .kpi-card p { margin: 0; font-size: 0.9rem; opacity: 0.95; }
+    .kpi-card.active { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
 
     /* ===== FILTROS ===== */
-    .filter-chips-container {
+    .filter-section {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 15px;
-        gap: 10px;
-        max-width: 100%;
+        margin-bottom: 25px;
+        gap: 15px;
     }
     .filter-chips {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
-        max-width: 100%;
+        gap: 8px;
     }
     .filter-chip {
         background: white;
-        border: 1px solid #cbd5e1;
-        color: #1e293b;
-        padding: 8px 14px;
-        border-radius: 30px;
+        border: 1.5px solid #d1d5db;
+        color: #1f2937;
+        padding: 8px 18px;
+        border-radius: 40px;
         font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
         font-size: 0.9rem;
-        white-space: nowrap;
-        max-width: 100%;
+        cursor: pointer;
+        transition: all 0.15s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
     .filter-chip.active {
         background: #1e3c72;
-        color: white;
         border-color: #1e3c72;
+        color: white;
     }
-    .ordenacao-wrapper {
+    .ordenacao-box {
         display: flex;
         align-items: center;
-        gap: 6px;
         background: white;
-        padding: 4px 10px;
-        border-radius: 30px;
-        border: 1px solid #cbd5e1;
+        padding: 5px 15px;
+        border-radius: 40px;
+        border: 1.5px solid #d1d5db;
+        gap: 8px;
     }
-    .ordenacao-wrapper select {
+    .ordenacao-box select {
         border: none;
         background: transparent;
-        padding: 6px 0;
+        padding: 8px 0;
         font-size: 0.9rem;
         outline: none;
-        max-width: 120px;
     }
 
-    /* ===== TABELA / CARDS ===== */
-    .parcela-table {
-        width: 100%;
-        border-collapse: collapse;
+    /* ===== CARDS GRID ===== */
+    .cards-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+    @media (min-width: 640px) {
+        .cards-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+        .cards-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* Card individual */
+    .cliente-card {
         background: white;
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        table-layout: fixed;
+        border-radius: 24px;
+        padding: 20px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        border: 1px solid #f0f3f7;
+        transition: transform 0.2s;
+        display: flex;
+        flex-direction: column;
     }
-    .parcela-table thead {
-        background: #f8fafc;
+    .cliente-card:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.1); }
+
+    .card-header-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
     }
-    .parcela-table th {
-        padding: 0.8rem;
-        text-align: left;
+    .cliente-nome-card {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.3;
+    }
+    .cliente-carro-card {
+        font-size: 0.9rem;
+        color: #64748b;
+        margin-top: 4px;
+    }
+    .parcela-badge {
+        background: #eef2ff;
+        color: #1e3c72;
+        padding: 6px 12px;
+        border-radius: 30px;
         font-weight: 600;
-        color: #1e293b;
-        border-bottom: 2px solid #e2e8f0;
         font-size: 0.9rem;
-        word-break: break-word;
-    }
-    .parcela-table td {
-        padding: 0.8rem;
-        border-bottom: 1px solid #e2e8f0;
-        color: #334155;
-        font-size: 0.9rem;
-        word-break: break-word;
-        vertical-align: top;
-    }
-    .parcela-table tbody tr:hover {
-        background: #fafbff;
+        white-space: nowrap;
     }
 
-    /* ===== BOTÕES ===== */
-    .btn-success {
+    .card-detalhes {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin: 15px 0;
+    }
+    .detalhe-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.95rem;
+    }
+    .detalhe-item i {
+        width: 20px;
+        color: #2a5298;
+        font-size: 1.1rem;
+    }
+
+    .status-card {
+        padding: 8px 16px;
+        border-radius: 40px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-align: center;
+        margin: 10px 0;
+        display: inline-block;
+        width: fit-content;
+    }
+    .status-vencida { background: #fee2e2; color: #b91c1c; }
+    .status-hoje { background: #fff3cd; color: #856404; }
+    .status-amanha { background: #fff8e7; color: #b45309; }
+    .status-normal { background: #f1f5f9; color: #334155; }
+
+    .card-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    .btn-card {
+        flex: 1;
+        padding: 12px 10px;
+        border-radius: 40px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s;
+        background: white;
+        color: #1e3c72;
+        border: 1.5px solid #d1d5db;
+    }
+    .btn-card-pagar {
         background: #28a745;
         color: white;
         border: none;
-        padding: 8px 12px;
-        border-radius: 24px;
-        cursor: pointer;
-        font-size: 0.8rem;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        white-space: nowrap;
     }
-    .btn-whatsapp {
+    .btn-card-whatsapp {
         background: #25D366;
         color: white;
         border: none;
-        padding: 8px 12px;
-        border-radius: 24px;
-        cursor: pointer;
-        font-size: 0.8rem;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        white-space: nowrap;
-    }
-    .btn-outline {
-        background: white;
-        border: 1px solid #2a5298;
-        color: #2a5298;
-        padding: 10px 20px;
-        border-radius: 40px;
-        font-weight: 600;
-        cursor: pointer;
-        max-width: 100%;
     }
 
-    /* ===== ESTILOS GERAIS ===== */
-    .card {
-        max-width: 100%;
-        overflow: hidden;
+    /* Botões auxiliares */
+    .btn-load-more {
+        background: white;
+        border: 1.5px solid #2a5298;
+        color: #2a5298;
+        padding: 12px 28px;
+        border-radius: 60px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
     }
-    .card-header {
+    .btn-load-more:hover {
+        background: #2a5298;
+        color: white;
+    }
+
+    .install-help-btn {
+        position: fixed;
+        bottom: 25px;
+        left: 25px;
+        z-index: 1000;
+    }
+    .install-help-btn button {
+        background: #1e3c72;
+        color: white;
+        border: none;
+        padding: 12px 22px;
+        border-radius: 60px;
+        font-weight: bold;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+        cursor: pointer;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-bottom: 15px;
-        flex-wrap: wrap;
-        max-width: 100%;
-    }
-    .badge {
-        background: #e2e8f0;
-        padding: 4px 12px;
-        border-radius: 30px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #1e293b;
+        gap: 8px;
     }
 
-    .cliente-nome {
-        font-weight: 600;
-        color: #0b1e33;
-        word-break: break-word;
-    }
-    .cliente-carro {
-        font-size: 0.8rem;
-        color: #64748b;
-        display: block;
-        word-break: break-word;
-    }
-
-    /* ===== RESPONSIVIDADE MOBILE ===== */
-    @media (max-width: 640px) {
-        .main-content {
-            padding: 0.8rem;
-        }
-
-        /* KPIs */
-        .kpi-card {
-            padding: 0.8rem 0.3rem;
-        }
-        .kpi-card i {
-            font-size: 1.5rem;
-        }
-        .kpi-card h3 {
-            font-size: 1.5rem;
-        }
-        .kpi-card p {
-            font-size: 0.8rem;
-        }
-
-        /* Filtros */
-        .filter-chip {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-        }
-        .ordenacao-wrapper select {
-            font-size: 0.8rem;
-            padding: 4px 0;
-        }
-
-        /* Tabela -> Cards */
-        .parcela-table thead {
-            display: none;
-        }
-        .parcela-table tbody tr {
-            display: block;
-            margin-bottom: 12px;
-            border: 1px solid #e0e7ef;
-            border-radius: 16px;
-            padding: 10px;
-            background: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-            max-width: 100%;
-            overflow: visible;
-        }
-        .parcela-table td {
-            display: flex;
-            align-items: flex-start;
-            padding: 8px 0;
-            border-bottom: 1px dashed #edf2f7;
-            gap: 8px;
-            max-width: 100%;
-            overflow: visible;
-            flex-wrap: wrap;
-            font-size: 0.85rem;
-        }
-        .parcela-table td:last-child {
-            border-bottom: none;
-        }
-        .parcela-table td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: #1e293b;
-            min-width: 80px;
-            font-size: 0.8rem;
-            flex-shrink: 0;
-        }
-        .parcela-table td > * {
-            word-break: break-word;
-            max-width: calc(100% - 85px);
-            overflow: visible;
-        }
-
-        /* Ações empilhadas */
-        .parcela-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            width: 100%;
-            overflow: visible;
-        }
-        .btn-success, .btn-whatsapp {
-            width: 100%;
-            text-align: center;
-            justify-content: center;
-            white-space: normal;
-            word-break: break-word;
-            padding: 8px 10px;
-            font-size: 0.8rem;
-            border-radius: 20px;
-        }
-
-        /* Tipografia */
-        .cliente-nome {
-            font-size: 0.95rem;
-        }
-        .cliente-carro {
-            font-size: 0.75rem;
-        }
-        .card-header h2 {
-            font-size: 1.2rem;
-        }
-        .badge {
-            padding: 3px 10px;
-            font-size: 0.75rem;
-        }
-    }
-
-    /* ===== DESKTOP: ajustes complementares ===== */
-    @media (min-width: 641px) {
-        .parcela-actions {
-            display: flex;
-            flex-direction: row;
-            gap: 8px;
-        }
-        .btn-success, .btn-whatsapp {
-            white-space: nowrap;
-        }
+    /* Responsividade extra */
+    @media (max-width: 480px) {
+        .card-actions { flex-direction: column; }
+        .btn-card { padding: 14px; }
     }
 </style>
 
@@ -394,30 +315,29 @@
     let filtroAtual = 'todas';
     let parcelasFiltradas = [];
     let paginaAtual = 1;
-    const ITENS_POR_PAGINA = 10;
-    const container = document.getElementById('parcelasContainer');
+    const ITENS_POR_PAGINA = 9;  // Múltiplo de 3 para grid bonito
+    const container = document.getElementById('cardsContainer');
     const loadMoreContainer = document.getElementById('loadMoreContainer');
     const ordenacaoSelect = document.getElementById('ordenacao');
-    const installHelpBtn = document.getElementById('installHelpButton');
 
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        installHelpBtn.style.display = 'block';
-    }
+    // Botão de instalação
+    const installBtn = document.getElementById('installHelpButton');
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) installBtn.style.display = 'block';
+    else installBtn.style.display = 'none';
     window.showInstallGuide = function() {
-        let message = /iPhone|iPad|iPod/i.test(navigator.userAgent) ?
-            "📱 Para instalar no iPhone/iPad:\n\n1. Toque no ícone 'Compartilhar' (quadrado com seta) na barra inferior do Safari.\n2. Role e toque em 'Adicionar à Tela de Início'.\n3. Confirme tocando em 'Adicionar'." :
-            (/Android/i.test(navigator.userAgent) ?
-            "📱 Para instalar no Android:\n\n1. Toque no menu (três pontinhos) do Chrome.\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'.\n3. Confirme a instalação." :
-            "💻 No PC: Clique no ícone de instalação (monitor com seta) na barra de endereço do Chrome/Edge.");
-        alert(message);
+        let msg = /iPhone|iPad|iPod/i.test(navigator.userAgent) ?
+            "📱 iPhone/iPad:\n1. Toque em Compartilhar (quadrado com seta)\n2. Role e toque em 'Adicionar à Tela de Início'\n3. Confirme." :
+            "📱 Android:\n1. Toque no menu (3 pontinhos) do Chrome\n2. 'Instalar aplicativo' ou 'Adicionar à tela inicial'.";
+        alert(msg);
     };
 
+    // Carrega todas as parcelas
     async function carregarTodasParcelas() {
         try {
-            const response = await fetch('/api/todas-parcelas');
-            const data = await response.json();
+            const resp = await fetch('/api/todas-parcelas');
+            const data = await resp.json();
             todasParcelas = data.parcelas || [];
-        } catch (error) {
+        } catch(e) {
             const ids = new Set();
             todasParcelas = [...dadosParciais.vencidas, ...dadosParciais.hoje, ...dadosParciais.semana]
                 .filter(p => ids.has(p.id) ? false : ids.add(p.id));
@@ -425,93 +345,100 @@
         aplicarFiltro('todas');
     }
 
-    function ordenarParcelas(parcelas, criterio) {
-        const copia = [...parcelas];
+    function ordenarParcelas(lista, criterio) {
+        const copia = [...lista];
         if (criterio === 'data') copia.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
         else if (criterio === 'nome') copia.sort((a,b) => a.cliente.nome.localeCompare(b.cliente.nome));
-        else if (criterio === 'valor') copia.sort((a,b) => b.valor - a.valor);
+        else copia.sort((a,b) => b.valor - a.valor);
         return copia;
     }
 
-    function atualizarParcelasFiltradas() {
-        let parcelas = [];
-        if (filtroAtual === 'vencidas') parcelas = dadosParciais.vencidas;
-        else if (filtroAtual === 'hoje') parcelas = dadosParciais.hoje;
-        else if (filtroAtual === 'semana') parcelas = dadosParciais.semana;
-        else parcelas = todasParcelas;
+    function atualizarListaFiltrada() {
+        let lista = [];
+        if (filtroAtual === 'vencidas') lista = dadosParciais.vencidas;
+        else if (filtroAtual === 'hoje') lista = dadosParciais.hoje;
+        else if (filtroAtual === 'semana') lista = dadosParciais.semana;
+        else lista = todasParcelas;
 
-        parcelasFiltradas = ordenarParcelas(parcelas, ordenacaoSelect.value);
+        parcelasFiltradas = ordenarParcelas(lista, ordenacaoSelect.value);
         paginaAtual = 1;
-        renderizarParcelas();
+        renderizarCards();
     }
 
-    function renderizarParcelas() {
+    function renderizarCards() {
         const inicio = 0, fim = paginaAtual * ITENS_POR_PAGINA;
-        const parcelasPagina = parcelasFiltradas.slice(inicio, fim);
+        const pagina = parcelasFiltradas.slice(inicio, fim);
 
         if (parcelasFiltradas.length === 0) {
-            container.innerHTML = `<div class="card"><div style="text-align:center;padding:2rem;"><i class="fas fa-check-circle" style="font-size:3rem;color:#28a745;"></i><p>Nenhuma parcela neste filtro!</p></div></div>`;
+            container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px 0;"><i class="fas fa-check-circle" style="font-size:3rem;color:#28a745;"></i><p style="margin-top:15px;">Nenhuma parcela neste filtro!</p></div>`;
             loadMoreContainer.style.display = 'none';
             return;
         }
 
-        let titulo = '', cor = '', icone = '';
-        if (filtroAtual === 'vencidas') { titulo='Próximas Parcelas Vencidas'; cor='#dc3545'; icone='exclamation-circle'; }
-        else if (filtroAtual === 'hoje') { titulo='Vencem HOJE'; cor='#fd7e14'; icone='bell'; }
-        else if (filtroAtual === 'semana') { titulo='Esta Semana'; cor='#ffc107'; icone='calendar-alt'; }
-        else { titulo='Próximas Parcelas'; cor='#2a5298'; icone='list'; }
-
-        let html = `<div class="card"><div class="card-header"><h2 style="color:${cor};"><i class="fas fa-${icone}"></i> ${titulo}</h2><span class="badge" style="background:${cor};color:white;">${parcelasFiltradas.length}</span></div>`;
-        html += `<table class="parcela-table"><thead><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
-
+        let html = '';
         const hoje = new Date().toISOString().split('T')[0];
-        parcelasPagina.forEach(p => {
-            const dias = Math.ceil((new Date(p.data_vencimento) - new Date(hoje)) / 86400000);
-            let statusTexto = '', statusCor = '';
-            if (p.data_vencimento < hoje) { statusTexto = `Atrasada ${Math.abs(dias)}d`; statusCor = '#dc3545'; }
-            else if (dias === 0) { statusTexto = 'HOJE'; statusCor = '#dc3545'; }
-            else if (dias === 1) { statusTexto = 'Amanhã'; statusCor = '#fd7e14'; }
-            else { statusTexto = `${dias} dias`; statusCor = '#64748b'; }
 
-            let whatsappMsg = `Olá ${p.cliente.nome}, lembrete da próxima parcela (${p.numero}/${p.cliente.quantidade_parcelas}) do contrato ${p.cliente.carro}. Vencimento: ${p.data_vencimento.split('-').reverse().join('/')}. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
-            if (p.data_vencimento < hoje) whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
+        pagina.forEach(p => {
+            const venc = new Date(p.data_vencimento);
+            const hojeDate = new Date(hoje);
+            const dias = Math.ceil((venc - hojeDate) / 86400000);
+            let statusClasse = 'status-normal', statusTexto = `${dias} dias`;
+            if (p.data_vencimento < hoje) {
+                statusClasse = 'status-vencida';
+                statusTexto = `Atrasada ${Math.abs(dias)}d`;
+            } else if (dias === 0) {
+                statusClasse = 'status-hoje';
+                statusTexto = 'Vence HOJE';
+            } else if (dias === 1) {
+                statusClasse = 'status-amanha';
+                statusTexto = 'Amanhã';
+            }
 
-            html += `<tr>`;
-            html += `<td data-label="Cliente"><span class="cliente-nome">${p.cliente.nome}</span><span class="cliente-carro">${p.cliente.carro}</span></td>`;
-            html += `<td data-label="Parcela">${p.numero}/${p.cliente.quantidade_parcelas}</td>`;
-            html += `<td data-label="Vencimento">${p.data_vencimento.split('-').reverse().join('/')}</td>`;
-            html += `<td data-label="Valor">R$ ${p.valor.toFixed(2).replace('.', ',')}</td>`;
-            html += `<td data-label="Status" style="color:${statusCor}; font-weight:500;">${statusTexto}</td>`;
-            html += `<td data-label="Ações"><div class="parcela-actions">`;
-            html += `<a href="/parcela/pagar/${p.id}" class="btn-success" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i>Pagar</a>`;
-            html += `<a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp"></i>WhatsApp</a>`;
-            html += `</div></td></tr>`;
+            let msgWhats = `Olá ${p.cliente.nome}, lembrete da próxima parcela (${p.numero}/${p.cliente.quantidade_parcelas}) do contrato ${p.cliente.carro}. Vencimento: ${p.data_vencimento.split('-').reverse().join('/')}. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
+            if (p.data_vencimento < hoje) msgWhats = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
+
+            html += `
+                <div class="cliente-card">
+                    <div class="card-header-info">
+                        <div>
+                            <div class="cliente-nome-card">${p.cliente.nome}</div>
+                            <div class="cliente-carro-card">${p.cliente.carro}</div>
+                        </div>
+                        <span class="parcela-badge">${p.numero}/${p.cliente.quantidade_parcelas}</span>
+                    </div>
+                    <div class="card-detalhes">
+                        <div class="detalhe-item"><i class="fas fa-calendar"></i> Venc: ${p.data_vencimento.split('-').reverse().join('/')}</div>
+                        <div class="detalhe-item"><i class="fas fa-money-bill"></i> ${p.valor.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</div>
+                        <div class="detalhe-item"><i class="fas fa-phone"></i> ${p.cliente.telefone}</div>
+                    </div>
+                    <span class="status-card ${statusClasse}"><i class="fas fa-hourglass-half"></i> ${statusTexto}</span>
+                    <div class="card-actions">
+                        <a href="/parcela/pagar/${p.id}" class="btn-card btn-card-pagar" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i> Pagar</a>
+                        <a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g,'')}?text=${encodeURIComponent(msgWhats)}" target="_blank" class="btn-card btn-card-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+                    </div>
+                </div>
+            `;
         });
 
-        html += `</tbody></table>`;
-        html += `<div style="text-align:center;padding-top:15px;color:#64748b;font-size:0.9rem;">Mostrando ${parcelasPagina.length} de ${parcelasFiltradas.length}</div></div>`;
         container.innerHTML = html;
         loadMoreContainer.style.display = parcelasFiltradas.length > fim ? 'block' : 'none';
     }
 
-    function carregarMais() { paginaAtual++; renderizarParcelas(); }
+    function carregarMais() { paginaAtual++; renderizarCards(); }
 
     function aplicarFiltro(filtro) {
         filtroAtual = filtro;
-        document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
         document.querySelector(`.filter-chip[data-filter="${filtro}"]`).classList.add('active');
-        document.querySelectorAll('.kpi-card').forEach(card => card.classList.remove('active'));
+        document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('active'));
         document.querySelector(`.kpi-card[data-filter="${filtro}"]`).classList.add('active');
-        atualizarParcelasFiltradas();
+        atualizarListaFiltrada();
     }
 
-    document.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.addEventListener('click', () => aplicarFiltro(chip.dataset.filter));
-    });
-    document.querySelectorAll('.kpi-card').forEach(card => {
-        card.addEventListener('click', () => aplicarFiltro(card.dataset.filter));
-    });
-    ordenacaoSelect.addEventListener('change', () => atualizarParcelasFiltradas());
+    // Eventos
+    document.querySelectorAll('.filter-chip').forEach(c => c.addEventListener('click', e => aplicarFiltro(e.target.dataset.filter)));
+    document.querySelectorAll('.kpi-card').forEach(c => c.addEventListener('click', e => aplicarFiltro(e.currentTarget.dataset.filter)));
+    ordenacaoSelect.addEventListener('change', atualizarListaFiltrada);
 
     carregarTodasParcelas();
 </script>
