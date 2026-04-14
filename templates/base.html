@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>{% block title %}Cobrança Fácil{% endblock %}</title>
     
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
-    <!-- PWA Meta Tags -->
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -100,15 +98,10 @@
         <p>&copy; {{ now.year }} Cobrança Fácil – Lembretes inteligentes para seu negócio</p>
     </footer>
 
-    <!-- Sistema Inteligente de Instalação do PWA -->
     <div id="pwa-install-container" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000; font-family: 'Segoe UI', Roboto, sans-serif;">
-        
-        <!-- Botão para navegadores com suporte nativo (Chrome, Edge, Android) -->
         <button id="pwa-install-button" style="display: none; background: #1e3c72; color: white; border: none; padding: 12px 24px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; cursor: pointer; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2);">
             ⬇️ Instalar App Cobrança Fácil
         </button>
-
-        <!-- Guia de instalação manual para iOS (Safari) -->
         <div id="ios-install-guide" style="display: none; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 15px 20px; max-width: 260px; border: 1px solid #e0e7ef;">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                 <span style="font-size: 28px;">📱</span>
@@ -123,9 +116,7 @@
         </div>
     </div>
 
-    <!-- Script de controle da instalação e Service Worker -->
     <script>
-        // ===== SISTEMA DE INSTALAÇÃO PWA =====
         (function() {
             let deferredPrompt;
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -141,7 +132,6 @@
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                
                 if (installContainer) {
                     installContainer.style.display = 'block';
                     if (installButton) installButton.style.display = 'flex';
@@ -156,11 +146,9 @@
                         alert('A instalação não está disponível no momento. Tente novamente mais tarde.');
                         return;
                     }
-                    
                     deferredPrompt.prompt();
                     const { outcome } = await deferredPrompt.userChoice;
                     console.log(`Usuário ${outcome === 'accepted' ? 'aceitou' : 'recusou'} a instalação`);
-                    
                     deferredPrompt = null;
                     if (installContainer) installContainer.style.display = 'none';
                 });
@@ -179,12 +167,23 @@
             }, 3000);
         })();
 
-        // ===== SERVICE WORKER =====
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/static/sw.js')
-                    .then(reg => console.log('Service Worker registrado!', reg.scope))
-                    .catch(err => console.log('Erro no Service Worker:', err));
+                .then(reg => {
+                    console.log('SW registrado:', reg);
+                    reg.onupdatefound = () => {
+                        const newWorker = reg.installing;
+                        newWorker.onstatechange = () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                if (confirm("Nova versão disponível. Atualizar?")) {
+                                    window.location.reload();
+                                }
+                            }
+                        };
+                    };
+                })
+                .catch(err => console.log('Erro SW:', err));
             });
         }
     </script>

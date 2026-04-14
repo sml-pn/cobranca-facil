@@ -1,24 +1,21 @@
 {
   "name": "Cobrança Fácil",
   "short_name": "Cobrança",
-  "description": "Sistema de cobrança inteligente para lojas de veículos",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1e3c72",
+  "orientation": "portrait",
+  "background_color": "#f4f7fc",
   "theme_color": "#1e3c72",
-  "orientation": "portrait-primary",
+  "description": "Gerencie cobranças e lembretes de clientes com facilidade.",
   "icons": [
-    {
-      "src": "/static/android-icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/static/ms-icon-310x310.png",
-      "sizes": "310x310",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "/static/icons/icon-72.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "/static/icons/icon-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/static/icons/icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/static/icons/icon-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/static/icons/icon-152.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/icons/icon-384.png", "sizes": "384x384", "type": "image/png" },
+    { "src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
