@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>{% block title %}Cobrança Fácil{% endblock %}</title>
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,6 +23,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <link rel="shortcut icon" href="/static/favicon.ico">
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
         body { background: #f4f7fc; min-height: 100vh; display: flex; flex-direction: column; }
@@ -97,62 +100,93 @@
         <p>&copy; {{ now.year }} Cobrança Fácil – Lembretes inteligentes para seu negócio</p>
     </footer>
 
-    <!-- Botão de Ajuda para Instalação -->
-    <div id="installHelpButton" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
-        <button onclick="showInstallGuide()" style="background: #1e3c72; color: white; border: none; padding: 12px 20px; border-radius: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: bold; cursor: pointer;">
-            ⬇️ Como baixar o App
+    <!-- Sistema Inteligente de Instalação do PWA -->
+    <div id="pwa-install-container" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000; font-family: 'Segoe UI', Roboto, sans-serif;">
+        
+        <!-- Botão para navegadores com suporte nativo (Chrome, Edge, Android) -->
+        <button id="pwa-install-button" style="display: none; background: #1e3c72; color: white; border: none; padding: 12px 24px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; cursor: pointer; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2);">
+            ⬇️ Instalar App Cobrança Fácil
         </button>
+
+        <!-- Guia de instalação manual para iOS (Safari) -->
+        <div id="ios-install-guide" style="display: none; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 15px 20px; max-width: 260px; border: 1px solid #e0e7ef;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                <span style="font-size: 28px;">📱</span>
+                <span style="font-weight: 700; color: #1e3c72; font-size: 1rem;">Instale o App</span>
+            </div>
+            <p style="font-size: 0.85rem; color: #475569; margin: 0 0 10px 0;">Toque em <strong>Compartilhar</strong> <i class="fas fa-share" style="color: #2a5298;"></i> e depois em:</p>
+            <div style="background: #f8fafc; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <span style="font-size: 20px;">➕</span>
+                <span style="font-weight: 600; color: #1e293b;">Adicionar à Tela de Início</span>
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0;">Use o Safari para ter a melhor experiência.</p>
+        </div>
     </div>
 
+    <!-- Script de controle da instalação e Service Worker -->
     <script>
-        if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            document.getElementById('installHelpButton').style.display = 'block';
-        }
-        function showInstallGuide() {
-            let message = "";
-            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                message = "📱 Para instalar no iPhone/iPad:\n\n1. Toque no ícone 'Compartilhar' (quadrado com seta) na barra inferior do Safari.\n2. Role e toque em 'Adicionar à Tela de Início'.\n3. Confirme tocando em 'Adicionar'.";
-            } else if (/Android/i.test(navigator.userAgent)) {
-                message = "📱 Para instalar no Android:\n\n1. Toque no menu (três pontinhos) do Chrome.\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'.\n3. Confirme a instalação.";
-            } else {
-                message = "💻 No PC: Clique no ícone de instalação (monitor com seta) na barra de endereço do Chrome/Edge.";
+        // ===== SISTEMA DE INSTALAÇÃO PWA =====
+        (function() {
+            let deferredPrompt;
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            const installContainer = document.getElementById('pwa-install-container');
+            const installButton = document.getElementById('pwa-install-button');
+            const iosGuide = document.getElementById('ios-install-guide');
+
+            if (isStandalone) {
+                if (installContainer) installContainer.style.display = 'none';
+                return;
             }
-            alert(message);
-        }
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                if (installContainer) {
+                    installContainer.style.display = 'block';
+                    if (installButton) installButton.style.display = 'flex';
+                    if (iosGuide) iosGuide.style.display = 'none';
+                }
+                console.log('✅ Instalação nativa disponível.');
+            });
+
+            if (installButton) {
+                installButton.addEventListener('click', async () => {
+                    if (!deferredPrompt) {
+                        alert('A instalação não está disponível no momento. Tente novamente mais tarde.');
+                        return;
+                    }
+                    
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`Usuário ${outcome === 'accepted' ? 'aceitou' : 'recusou'} a instalação`);
+                    
+                    deferredPrompt = null;
+                    if (installContainer) installContainer.style.display = 'none';
+                });
+            }
+
+            setTimeout(() => {
+                if (!deferredPrompt && installContainer && !isStandalone) {
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                    if (isIOS) {
+                        if (installButton) installButton.style.display = 'none';
+                        if (iosGuide) iosGuide.style.display = 'block';
+                        installContainer.style.display = 'block';
+                        console.log('ℹ️ Exibindo guia para iOS.');
+                    }
+                }
+            }, 3000);
+        })();
+
+        // ===== SERVICE WORKER =====
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/static/sw.js')
-                    .then(reg => console.log('Service Worker registrado!'))
-                    .catch(err => console.log('Erro no SW:', err));
+                    .then(reg => console.log('Service Worker registrado!', reg.scope))
+                    .catch(err => console.log('Erro no Service Worker:', err));
             });
         }
-        if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-            setTimeout(() => Notification.requestPermission(), 3000);
-        }
-        function verificarLembretesENotificar() {
-            fetch('/api/lembretes')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.lembretes && data.lembretes.length > 0) {
-                        data.lembretes.forEach(item => {
-                            if (Notification.permission === 'granted') {
-                                navigator.serviceWorker.ready.then(reg => {
-                                    reg.showNotification('🔔 Cobrança Fácil', {
-                                        body: `${item.cliente} - Parcela ${item.parcela} vence em ${item.dias} dias. ${item.valor}`,
-                                        icon: '/static/android-icon-192x192.png',
-                                        badge: '/static/favicon-96x96.png',
-                                        vibrate: [200, 100, 200],
-                                        tag: `parcela-${item.cliente}-${item.parcela}`,
-                                        renotify: true
-                                    });
-                                });
-                            }
-                        });
-                    }
-                }).catch(err => console.log('Erro:', err));
-        }
-        window.addEventListener('load', () => setTimeout(verificarLembretesENotificar, 5000));
-        setInterval(verificarLembretesENotificar, 30 * 60 * 1000);
     </script>
     {% block scripts %}{% endblock %}
 </body>
