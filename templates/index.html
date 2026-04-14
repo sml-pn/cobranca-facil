@@ -63,7 +63,7 @@
 </div>
 
 <style>
-    /* ===== CORREÇÕES DE VAZAMENTO ===== */
+    /* ===== RESET E CONTAINERS ===== */
     * {
         box-sizing: border-box;
     }
@@ -75,7 +75,7 @@
         padding: 1rem;
     }
 
-    /* KPIs */
+    /* ===== KPIs ===== */
     .kpi-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -94,7 +94,7 @@
         cursor: pointer;
         transition: all 0.2s;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        min-width: 0; /* Evita que o conteúdo force largura */
+        min-width: 0;
         word-break: break-word;
     }
     .kpi-card i { font-size: 1.8rem; margin-bottom: 5px; }
@@ -102,7 +102,7 @@
     .kpi-card p { margin: 0; font-size: 0.9rem; font-weight: 500; }
     .kpi-card.active { transform: scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
 
-    /* Filtros */
+    /* ===== FILTROS ===== */
     .filter-chips-container {
         display: flex;
         flex-wrap: wrap;
@@ -154,7 +154,7 @@
         max-width: 120px;
     }
 
-    /* Tabela/Cards */
+    /* ===== TABELA / CARDS ===== */
     .parcela-table {
         width: 100%;
         border-collapse: collapse;
@@ -162,7 +162,7 @@
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        table-layout: fixed; /* Força a tabela a respeitar larguras */
+        table-layout: fixed;
     }
     .parcela-table thead {
         background: #f8fafc;
@@ -188,71 +188,7 @@
         background: #fafbff;
     }
 
-    /* Mobile: cards empilhados sem vazamento */
-    @media (max-width: 640px) {
-        .parcela-table thead {
-            display: none;
-        }
-        .parcela-table tbody tr {
-            display: block;
-            margin-bottom: 16px;
-            border: 1px solid #e0e7ef;
-            border-radius: 16px;
-            padding: 12px;
-            background: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-            max-width: 100%;
-        }
-        .parcela-table td {
-            display: flex;
-            align-items: flex-start;
-            padding: 10px 0;
-            border-bottom: 1px dashed #edf2f7;
-            gap: 10px;
-            max-width: 100%;
-        }
-        .parcela-table td:last-child {
-            border-bottom: none;
-        }
-        .parcela-table td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: #1e293b;
-            min-width: 90px;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-        .parcela-table td > * {
-            word-break: break-word;
-            max-width: calc(100% - 100px);
-        }
-        .parcela-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 100%;
-        }
-        .btn-success, .btn-whatsapp {
-            width: 100%;
-            text-align: center;
-            justify-content: center;
-            white-space: normal;
-        }
-        /* Ajuste para o texto do cliente não vazar */
-        .cliente-nome {
-            font-weight: 600;
-            color: #0b1e33;
-            word-break: break-word;
-        }
-        .cliente-carro {
-            font-size: 0.8rem;
-            color: #64748b;
-            display: block;
-            word-break: break-word;
-        }
-    }
-
-    /* Botões */
+    /* ===== BOTÕES ===== */
     .btn-success {
         background: #28a745;
         color: white;
@@ -292,7 +228,7 @@
         max-width: 100%;
     }
 
-    /* Ajustes gerais */
+    /* ===== ESTILOS GERAIS ===== */
     .card {
         max-width: 100%;
         overflow: hidden;
@@ -312,6 +248,138 @@
         font-size: 0.8rem;
         font-weight: 600;
         color: #1e293b;
+    }
+
+    .cliente-nome {
+        font-weight: 600;
+        color: #0b1e33;
+        word-break: break-word;
+    }
+    .cliente-carro {
+        font-size: 0.8rem;
+        color: #64748b;
+        display: block;
+        word-break: break-word;
+    }
+
+    /* ===== RESPONSIVIDADE MOBILE ===== */
+    @media (max-width: 640px) {
+        .main-content {
+            padding: 0.8rem;
+        }
+
+        /* KPIs */
+        .kpi-card {
+            padding: 0.8rem 0.3rem;
+        }
+        .kpi-card i {
+            font-size: 1.5rem;
+        }
+        .kpi-card h3 {
+            font-size: 1.5rem;
+        }
+        .kpi-card p {
+            font-size: 0.8rem;
+        }
+
+        /* Filtros */
+        .filter-chip {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .ordenacao-wrapper select {
+            font-size: 0.8rem;
+            padding: 4px 0;
+        }
+
+        /* Tabela -> Cards */
+        .parcela-table thead {
+            display: none;
+        }
+        .parcela-table tbody tr {
+            display: block;
+            margin-bottom: 12px;
+            border: 1px solid #e0e7ef;
+            border-radius: 16px;
+            padding: 10px;
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            max-width: 100%;
+            overflow: visible;
+        }
+        .parcela-table td {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px 0;
+            border-bottom: 1px dashed #edf2f7;
+            gap: 8px;
+            max-width: 100%;
+            overflow: visible;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+        .parcela-table td:last-child {
+            border-bottom: none;
+        }
+        .parcela-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #1e293b;
+            min-width: 80px;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        .parcela-table td > * {
+            word-break: break-word;
+            max-width: calc(100% - 85px);
+            overflow: visible;
+        }
+
+        /* Ações empilhadas */
+        .parcela-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+            overflow: visible;
+        }
+        .btn-success, .btn-whatsapp {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+            white-space: normal;
+            word-break: break-word;
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+        }
+
+        /* Tipografia */
+        .cliente-nome {
+            font-size: 0.95rem;
+        }
+        .cliente-carro {
+            font-size: 0.75rem;
+        }
+        .card-header h2 {
+            font-size: 1.2rem;
+        }
+        .badge {
+            padding: 3px 10px;
+            font-size: 0.75rem;
+        }
+    }
+
+    /* ===== DESKTOP: ajustes complementares ===== */
+    @media (min-width: 641px) {
+        .parcela-actions {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+        }
+        .btn-success, .btn-whatsapp {
+            white-space: nowrap;
+        }
     }
 </style>
 
