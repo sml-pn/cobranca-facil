@@ -3,7 +3,7 @@
 {% block title %}Dashboard - Cobrança Fácil{% endblock %}
 
 {% block content %}
-
+<!-- KPIs Grid Responsivo -->
 <div class="kpi-grid">
     <div class="kpi-card filter-chip-card" data-filter="vencidas" style="background: linear-gradient(135deg, #dc3545, #8b1e1e);">
         <i class="fas fa-exclamation-circle"></i>
@@ -22,11 +22,12 @@
     </div>
     <div class="kpi-card filter-chip-card" data-filter="todas" style="background: linear-gradient(135deg, #28a745, #1e7a34);">
         <i class="fas fa-hand-holding-usd"></i>
-        <h3 class="kpi-valor">{{ total_receber|real }}</h3>
+        <h3>{{ total_receber|real }}</h3>
         <p>Total a Receber</p>
     </div>
 </div>
 
+<!-- Chips de Filtro -->
 <div class="filter-chips-container">
     <div class="filter-chips">
         <div class="filter-chip active" data-filter="todas">Todas</div>
@@ -44,169 +45,474 @@
     </div>
 </div>
 
+<!-- Container das Parcelas -->
 <div id="parcelasContainer"></div>
 
+<!-- Botão Carregar Mais -->
 <div id="loadMoreContainer" style="text-align: center; margin-top: 20px; display: none;">
     <button class="btn btn-outline" onclick="carregarMais()">
         <i class="fas fa-chevron-down"></i> Carregar mais
     </button>
 </div>
 
-<div id="installHelpButton">
-    <button onclick="showInstallGuide()">⬇️ Como baixar o App</button>
+<!-- Botão de Ajuda Instalação (mobile) -->
+<div id="installHelpButton" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
+    <button onclick="showInstallGuide()" style="background: #1e3c72; color: white; border: none; padding: 12px 20px; border-radius: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: bold; cursor: pointer;">
+        ⬇️ Como baixar o App
+    </button>
 </div>
 
 <style>
-
-/* ===== BASE ===== */
-* { box-sizing: border-box; }
-
-body, .main-content {
-    max-width: 100%;
-    overflow-x: hidden;
-}
-
-.main-content {
-    padding: 1rem;
-}
-
-/* ===== KPI ===== */
-.kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-@media (min-width: 640px) {
-    .kpi-grid { grid-template-columns: repeat(4, 1fr); }
-}
-
-.kpi-card {
-    padding: 1rem 0.5rem;
-    text-align: center;
-    border-radius: 16px;
-    color: white;
-    cursor: pointer;
-    transition: 0.2s;
-    word-break: break-word;
-}
-
-.kpi-card h3 {
-    font-size: 1.6rem;
-    line-height: 1.2;
-}
-
-.kpi-valor {
-    font-size: 1.3rem;
-    word-break: break-all;
-}
-
-/* ===== FILTROS ===== */
-.filter-chips-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.filter-chip {
-    padding: 8px 12px;
-    border-radius: 30px;
-    white-space: nowrap;
-}
-
-.ordenacao-wrapper select {
-    max-width: 100%;
-}
-
-/* ===== TABELA ===== */
-.parcela-table {
-    width: 100%;
-    table-layout: fixed;
-}
-
-/* ===== MOBILE ===== */
-@media (max-width: 640px) {
-
-    .parcela-table thead {
-        display: none;
+    /* ===== RESET E CONTAINERS ===== */
+    * {
+        box-sizing: border-box;
     }
-
-    .parcela-table tbody tr {
-        display: block;
-        margin-bottom: 12px;
-        border-radius: 12px;
-        padding: 10px;
-    }
-
-    .parcela-table td {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        padding: 6px 0;
-    }
-
-    .parcela-table td::before {
-        content: attr(data-label);
-        font-weight: bold;
-        font-size: 0.75rem;
-    }
-
-    .parcela-table td > * {
+    body, .main-content {
         max-width: 100%;
+        overflow-x: hidden;
+    }
+    .main-content {
+        padding: 1rem;
+    }
+
+    /* ===== KPIs ===== */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+        max-width: 100%;
+    }
+    @media (min-width: 640px) {
+        .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .kpi-card {
+        padding: 1rem 0.5rem;
+        text-align: center;
+        border-radius: 16px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        min-width: 0;
+        word-break: break-word;
+    }
+    .kpi-card i { font-size: 1.8rem; margin-bottom: 5px; }
+    .kpi-card h3 { margin: 5px 0; font-size: 1.8rem; font-weight: 700; }
+    .kpi-card p { margin: 0; font-size: 0.9rem; font-weight: 500; }
+    .kpi-card.active { transform: scale(1.02); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+
+    /* ===== FILTROS ===== */
+    .filter-chips-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        gap: 10px;
+        max-width: 100%;
+    }
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        max-width: 100%;
+    }
+    .filter-chip {
+        background: white;
+        border: 1px solid #cbd5e1;
+        color: #1e293b;
+        padding: 8px 14px;
+        border-radius: 30px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+    .filter-chip.active {
+        background: #1e3c72;
+        color: white;
+        border-color: #1e3c72;
+    }
+    .ordenacao-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: white;
+        padding: 4px 10px;
+        border-radius: 30px;
+        border: 1px solid #cbd5e1;
+    }
+    .ordenacao-wrapper select {
+        border: none;
+        background: transparent;
+        padding: 6px 0;
+        font-size: 0.9rem;
+        outline: none;
+        max-width: 120px;
+    }
+
+    /* ===== TABELA / CARDS ===== */
+    .parcela-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        table-layout: fixed;
+    }
+    .parcela-table thead {
+        background: #f8fafc;
+    }
+    .parcela-table th {
+        padding: 0.8rem;
+        text-align: left;
+        font-weight: 600;
+        color: #1e293b;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 0.9rem;
+        word-break: break-word;
+    }
+    .parcela-table td {
+        padding: 0.8rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+        font-size: 0.9rem;
+        word-break: break-word;
+        vertical-align: top;
+    }
+    .parcela-table tbody tr:hover {
+        background: #fafbff;
+    }
+
+    /* ===== BOTÕES ===== */
+    .btn-success {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 24px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    .btn-whatsapp {
+        background: #25D366;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 24px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    .btn-outline {
+        background: white;
+        border: 1px solid #2a5298;
+        color: #2a5298;
+        padding: 10px 20px;
+        border-radius: 40px;
+        font-weight: 600;
+        cursor: pointer;
+        max-width: 100%;
+    }
+
+    /* ===== ESTILOS GERAIS ===== */
+    .card {
+        max-width: 100%;
+        overflow: hidden;
+    }
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        max-width: 100%;
+    }
+    .badge {
+        background: #e2e8f0;
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .cliente-nome {
+        font-weight: 600;
+        color: #0b1e33;
+        word-break: break-word;
+    }
+    .cliente-carro {
+        font-size: 0.8rem;
+        color: #64748b;
+        display: block;
         word-break: break-word;
     }
 
-    .parcela-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
+    /* ===== RESPONSIVIDADE MOBILE ===== */
+    @media (max-width: 640px) {
+        .main-content {
+            padding: 0.8rem;
+        }
+
+        /* KPIs */
+        .kpi-card {
+            padding: 0.8rem 0.3rem;
+        }
+        .kpi-card i {
+            font-size: 1.5rem;
+        }
+        .kpi-card h3 {
+            font-size: 1.5rem;
+        }
+        .kpi-card p {
+            font-size: 0.8rem;
+        }
+
+        /* Filtros */
+        .filter-chip {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .ordenacao-wrapper select {
+            font-size: 0.8rem;
+            padding: 4px 0;
+        }
+
+        /* Tabela -> Cards */
+        .parcela-table thead {
+            display: none;
+        }
+        .parcela-table tbody tr {
+            display: block;
+            margin-bottom: 12px;
+            border: 1px solid #e0e7ef;
+            border-radius: 16px;
+            padding: 10px;
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            max-width: 100%;
+            overflow: visible;
+        }
+        .parcela-table td {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px 0;
+            border-bottom: 1px dashed #edf2f7;
+            gap: 8px;
+            max-width: 100%;
+            overflow: visible;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+        .parcela-table td:last-child {
+            border-bottom: none;
+        }
+        .parcela-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #1e293b;
+            min-width: 80px;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        .parcela-table td > * {
+            word-break: break-word;
+            max-width: calc(100% - 85px);
+            overflow: visible;
+        }
+
+        /* Ações empilhadas */
+        .parcela-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+            overflow: visible;
+        }
+        .btn-success, .btn-whatsapp {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+            white-space: normal;
+            word-break: break-word;
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+        }
+
+        /* Tipografia */
+        .cliente-nome {
+            font-size: 0.95rem;
+        }
+        .cliente-carro {
+            font-size: 0.75rem;
+        }
+        .card-header h2 {
+            font-size: 1.2rem;
+        }
+        .badge {
+            padding: 3px 10px;
+            font-size: 0.75rem;
+        }
     }
 
-    .btn-success, .btn-whatsapp {
-        width: 100%;
+    /* ===== DESKTOP: ajustes complementares ===== */
+    @media (min-width: 641px) {
+        .parcela-actions {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+        }
+        .btn-success, .btn-whatsapp {
+            white-space: nowrap;
+        }
     }
-}
-
-/* ===== BOTÃO FIXO AJUSTADO ===== */
-#installHelpButton {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    z-index: 1000;
-}
-
-#installHelpButton button {
-    background: #1e3c72;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 30px;
-}
-
-/* evita sobreposição */
-@media (max-width: 640px) {
-    body {
-        padding-bottom: 80px;
-    }
-}
-
 </style>
 
 <script>
+    const dadosParciais = {
+        vencidas: {{ vencidas|tojson }},
+        hoje: {{ vence_hoje|tojson }},
+        semana: {{ esta_semana|tojson }}
+    };
 
-/* ===== MOSTRAR BOTÃO MOBILE ===== */
-if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-    document.getElementById('installHelpButton').style.display = 'block';
-}
+    let todasParcelas = [];
+    let filtroAtual = 'todas';
+    let parcelasFiltradas = [];
+    let paginaAtual = 1;
+    const ITENS_POR_PAGINA = 10;
+    const container = document.getElementById('parcelasContainer');
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
+    const ordenacaoSelect = document.getElementById('ordenacao');
+    const installHelpBtn = document.getElementById('installHelpButton');
 
-/* ===== GUIA ===== */
-function showInstallGuide() {
-    alert("No Chrome: menu ⋮ → Instalar app");
-}
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        installHelpBtn.style.display = 'block';
+    }
+    window.showInstallGuide = function() {
+        let message = /iPhone|iPad|iPod/i.test(navigator.userAgent) ?
+            "📱 Para instalar no iPhone/iPad:\n\n1. Toque no ícone 'Compartilhar' (quadrado com seta) na barra inferior do Safari.\n2. Role e toque em 'Adicionar à Tela de Início'.\n3. Confirme tocando em 'Adicionar'." :
+            (/Android/i.test(navigator.userAgent) ?
+            "📱 Para instalar no Android:\n\n1. Toque no menu (três pontinhos) do Chrome.\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'.\n3. Confirme a instalação." :
+            "💻 No PC: Clique no ícone de instalação (monitor com seta) na barra de endereço do Chrome/Edge.");
+        alert(message);
+    };
 
+    async function carregarTodasParcelas() {
+        try {
+            const response = await fetch('/api/todas-parcelas');
+            const data = await response.json();
+            todasParcelas = data.parcelas || [];
+        } catch (error) {
+            const ids = new Set();
+            todasParcelas = [...dadosParciais.vencidas, ...dadosParciais.hoje, ...dadosParciais.semana]
+                .filter(p => ids.has(p.id) ? false : ids.add(p.id));
+        }
+        aplicarFiltro('todas');
+    }
+
+    function ordenarParcelas(parcelas, criterio) {
+        const copia = [...parcelas];
+        if (criterio === 'data') copia.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
+        else if (criterio === 'nome') copia.sort((a,b) => a.cliente.nome.localeCompare(b.cliente.nome));
+        else if (criterio === 'valor') copia.sort((a,b) => b.valor - a.valor);
+        return copia;
+    }
+
+    function atualizarParcelasFiltradas() {
+        let parcelas = [];
+        if (filtroAtual === 'vencidas') parcelas = dadosParciais.vencidas;
+        else if (filtroAtual === 'hoje') parcelas = dadosParciais.hoje;
+        else if (filtroAtual === 'semana') parcelas = dadosParciais.semana;
+        else parcelas = todasParcelas;
+
+        parcelasFiltradas = ordenarParcelas(parcelas, ordenacaoSelect.value);
+        paginaAtual = 1;
+        renderizarParcelas();
+    }
+
+    function renderizarParcelas() {
+        const inicio = 0, fim = paginaAtual * ITENS_POR_PAGINA;
+        const parcelasPagina = parcelasFiltradas.slice(inicio, fim);
+
+        if (parcelasFiltradas.length === 0) {
+            container.innerHTML = `<div class="card"><div style="text-align:center;padding:2rem;"><i class="fas fa-check-circle" style="font-size:3rem;color:#28a745;"></i><p>Nenhuma parcela neste filtro!</p></div></div>`;
+            loadMoreContainer.style.display = 'none';
+            return;
+        }
+
+        let titulo = '', cor = '', icone = '';
+        if (filtroAtual === 'vencidas') { titulo='Próximas Parcelas Vencidas'; cor='#dc3545'; icone='exclamation-circle'; }
+        else if (filtroAtual === 'hoje') { titulo='Vencem HOJE'; cor='#fd7e14'; icone='bell'; }
+        else if (filtroAtual === 'semana') { titulo='Esta Semana'; cor='#ffc107'; icone='calendar-alt'; }
+        else { titulo='Próximas Parcelas'; cor='#2a5298'; icone='list'; }
+
+        let html = `<div class="card"><div class="card-header"><h2 style="color:${cor};"><i class="fas fa-${icone}"></i> ${titulo}</h2><span class="badge" style="background:${cor};color:white;">${parcelasFiltradas.length}</span></div>`;
+        html += `<table class="parcela-table"><thead><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+
+        const hoje = new Date().toISOString().split('T')[0];
+        parcelasPagina.forEach(p => {
+            const dias = Math.ceil((new Date(p.data_vencimento) - new Date(hoje)) / 86400000);
+            let statusTexto = '', statusCor = '';
+            if (p.data_vencimento < hoje) { statusTexto = `Atrasada ${Math.abs(dias)}d`; statusCor = '#dc3545'; }
+            else if (dias === 0) { statusTexto = 'HOJE'; statusCor = '#dc3545'; }
+            else if (dias === 1) { statusTexto = 'Amanhã'; statusCor = '#fd7e14'; }
+            else { statusTexto = `${dias} dias`; statusCor = '#64748b'; }
+
+            let whatsappMsg = `Olá ${p.cliente.nome}, lembrete da próxima parcela (${p.numero}/${p.cliente.quantidade_parcelas}) do contrato ${p.cliente.carro}. Vencimento: ${p.data_vencimento.split('-').reverse().join('/')}. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
+            if (p.data_vencimento < hoje) whatsappMsg = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
+
+            html += `<tr>`;
+            html += `<td data-label="Cliente"><span class="cliente-nome">${p.cliente.nome}</span><span class="cliente-carro">${p.cliente.carro}</span></td>`;
+            html += `<td data-label="Parcela">${p.numero}/${p.cliente.quantidade_parcelas}</td>`;
+            html += `<td data-label="Vencimento">${p.data_vencimento.split('-').reverse().join('/')}</td>`;
+            html += `<td data-label="Valor">R$ ${p.valor.toFixed(2).replace('.', ',')}</td>`;
+            html += `<td data-label="Status" style="color:${statusCor}; font-weight:500;">${statusTexto}</td>`;
+            html += `<td data-label="Ações"><div class="parcela-actions">`;
+            html += `<a href="/parcela/pagar/${p.id}" class="btn-success" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i>Pagar</a>`;
+            html += `<a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp"></i>WhatsApp</a>`;
+            html += `</div></td></tr>`;
+        });
+
+        html += `</tbody></table>`;
+        html += `<div style="text-align:center;padding-top:15px;color:#64748b;font-size:0.9rem;">Mostrando ${parcelasPagina.length} de ${parcelasFiltradas.length}</div></div>`;
+        container.innerHTML = html;
+        loadMoreContainer.style.display = parcelasFiltradas.length > fim ? 'block' : 'none';
+    }
+
+    function carregarMais() { paginaAtual++; renderizarParcelas(); }
+
+    function aplicarFiltro(filtro) {
+        filtroAtual = filtro;
+        document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
+        document.querySelector(`.filter-chip[data-filter="${filtro}"]`).classList.add('active');
+        document.querySelectorAll('.kpi-card').forEach(card => card.classList.remove('active'));
+        document.querySelector(`.kpi-card[data-filter="${filtro}"]`).classList.add('active');
+        atualizarParcelasFiltradas();
+    }
+
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => aplicarFiltro(chip.dataset.filter));
+    });
+    document.querySelectorAll('.kpi-card').forEach(card => {
+        card.addEventListener('click', () => aplicarFiltro(card.dataset.filter));
+    });
+    ordenacaoSelect.addEventListener('change', () => atualizarParcelasFiltradas());
+
+    carregarTodasParcelas();
 </script>
-
 {% endblock %}
