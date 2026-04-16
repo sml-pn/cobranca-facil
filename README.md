@@ -1,53 +1,36 @@
-O arquivo README.md ainda não foi criado. Vamos criá-lo agora com o conteúdo completo que você pediu e depois enviá-lo ao GitHub.
 
-1️⃣ Criar o arquivo README.md
+# 📊 Cobrança Fácil
 
-No Termux, dentro da pasta ~/sistema-cobranca, execute:
+Sistema inteligente de cobrança e gestão de parcelas para lojistas. Gerencia clientes, calcula parcelas automaticamente, exibe um dashboard financeiro e envia lembretes de cobrança via WhatsApp de forma totalmente automatizada.
 
-```bash
-nano README.md
-```
-
-Agora copie o bloco completo que está abaixo (desde # 🚗 Cobrança Auto Fácil até o final **Feito com ❤️ usando apenas um celular Android e Termux.**) e cole no nano.
-
-Para colar no Termux, pressione e segure a tela e selecione Paste ou use o botão de colar do teclado virtual.
-
-```markdown
-# 🚗 Cobrança Auto Fácil
-
-Sistema inteligente de cobrança para lojas de veículos. Lembre-se de parcelas que vencem em **5 dias**, notificações no celular/computador, botão direto para WhatsApp do cliente e funciona como um aplicativo instalável.
-
-**💰 Monetização:** Venda como SaaS (assinatura mensal) ou como sistema exclusivo para um cliente.
+**💰 Ideal para:** Venda como SaaS (assinatura mensal), white-label para lojas de veículos ou sistemas de gestão de cobrança em geral.
 
 ---
 
-## ✨ Funcionalidades
+## 🚀 Funcionalidades
 
-- ✅ Cadastro de clientes (nome, telefone, veículo)
-- ✅ Cadastro de parcelas (número, valor, data de vencimento)
-- ✅ Dashboard com parcelas que vencem nos próximos **5 dias**
-- ✅ Marcar parcela como paga
-- ✅ **Notificações push do navegador** (Android, iOS, Desktop)
-- ✅ **PWA** – Instalável como aplicativo nativo (ícone na tela inicial, abre em tela cheia)
-- ✅ **Botão "Notificar cliente"** – Abre WhatsApp com mensagem pronta
-- ✅ Agendador automático diário (verifica vencimentos às 5h da manhã)
-- ✅ Banco de dados PostgreSQL gratuito (Neon ou Aiven)
-- ✅ Deploy gratuito no Render
+- ✅ **Cadastro Completo de Clientes**: Nome, telefone, veículo, valor total, número de parcelas e dia de vencimento.
+- ✅ **Cálculo Automático**: Geração automática de todas as parcelas com base no valor total e dia de vencimento escolhido.
+- ✅ **Dashboard Profissional**: Visão geral com cards de resumo (Vencidas, Vence Hoje, Esta Semana, Total a Receber) e lista de próximas parcelas por cliente.
+- ✅ **Gestão de Pagamentos**: Marcação de parcelas como pagas com registro da data do pagamento.
+- ✅ **Notificações Automáticas**: Envio de lembretes de cobrança via WhatsApp **5 dias antes** do vencimento de cada parcela.
+- ✅ **Recuperação de Senha**: Sistema de "Esqueci a senha" que envia um link de recuperação via WhatsApp.
+- ✅ **PWA (Progressive Web App)**: Instalável como aplicativo no celular e computador, com ícone e funcionamento offline básico.
+- ✅ **Deploy Contínuo**: Atualizações automáticas no servidor a cada `git push`.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Tecnologias e Ferramentas (Todas Gratuitas)
 
-| Camada | Tecnologia |
-|--------|------------|
-| Backend | Python 3 + Flask |
-| Banco de Dados | PostgreSQL (produção) / SQLite (desenvolvimento local) |
-| Agendador | APScheduler |
-| Frontend | HTML5, CSS3, Jinja2 |
-| Notificações | Service Worker + Web Push API |
-| Hospedagem | Render (gratuito) |
-| Banco Cloud | Neon (PostgreSQL serverless gratuito) |
-| Desenvolvimento Mobile | Termux (Android) |
+| Categoria | Ferramenta | Função no Projeto |
+|-----------|------------|-------------------|
+| **Backend** | Python 3 + Flask | Lógica do servidor e rotas da aplicação. |
+| **Banco de Dados** | Neon (PostgreSQL) | Armazenamento de clientes, parcelas e usuários na nuvem (5 GB gratuitos). |
+| **Hospedagem** | Render | Servidor web gratuito que executa o código Flask 24/7. |
+| **Mensagens** | CallMeBot | API gratuita para envio de mensagens de WhatsApp. |
+| **Monitoramento** | cron-job.org | Pinga o servidor a cada 10 minutos para evitar que o Render hiberne. |
+| **Versionamento** | Git + GitHub | Controle de versão do código e deploy automático. |
+| **Frontend** | HTML, CSS, Jinja2 | Interface responsiva (funciona no celular e no PC). |
 
 ---
 
@@ -55,132 +38,152 @@ Sistema inteligente de cobrança para lojas de veículos. Lembre-se de parcelas 
 
 ```
 
-sistema-cobranca/
-├── app.py                 # Código principal do Flask
-├── requirements.txt       # Dependências Python (desenvolvimento)
-├── requirements-prod.txt  # Dependências para produção (psycopg2)
+cobranca-auto/
+├── app.py                 # Código principal do Flask (rotas, modelos, agendador)
+├── requirements.txt       # Dependências Python do projeto
 ├── runtime.txt            # Versão do Python para o Render
 ├── Procfile               # Comando de inicialização no Render
 ├── .gitignore             # Arquivos ignorados pelo Git
-├── static/                # Arquivos estáticos (ícones, service worker)
+├── static/                # Arquivos estáticos (CSS, JS, ícones, PWA)
 │   ├── manifest.json      # Configuração do PWA
-│   ├── sw.js              # Service Worker para notificações
-│   ├── icon-192.png       # Ícone 192x192
-│   └── icon-512.png       # Ícone 512x512
-└── templates/             # Templates HTML
+│   ├── sw.js              # Service Worker (cache e notificações)
+│   └── icons/             # Ícones do app em vários tamanhos
+└── templates/             # Templates HTML (frontend)
 ├── base.html          # Layout padrão (compartilhado)
-├── index.html         # Dashboard inicial
+├── index.html         # Dashboard principal
 ├── clientes.html      # Lista de clientes
 ├── novo_cliente.html  # Formulário de cadastro
-└── nova_parcela.html  # Formulário de parcela
+├── editar_cliente.html# Formulário de edição
+├── login.html         # Tela de login
+├── esqueci_senha.html # Tela de recuperação de senha
+└── redefinir_senha.html# Tela para criar nova senha
 
 ```
 
 ---
 
-## 🚀 Como Executar Localmente (Termux / Android)
+## 🔧 1. Pré-requisitos (Contas e Configurações)
 
-### 1. Instalar Termux e dependências
+Antes de rodar o projeto, você precisa criar contas gratuitas nas seguintes plataformas:
 
-```bash
-pkg update && pkg upgrade -y
-pkg install python git nano -y
-```
+| Ferramenta | Link para Cadastro | O que você vai obter |
+|------------|-------------------|----------------------|
+| **GitHub** | [github.com/join](https://github.com/join) | Conta para armazenar o código e fazer deploy automático. [reference:0] |
+| **Neon** | [neon.tech](https://neon.tech) | Banco de dados PostgreSQL gratuito (5 GB). Você receberá uma **Connection String**. [reference:1] |
+| **Render** | [render.com](https://render.com) | Hospedagem gratuita para a aplicação. Conecte com sua conta do GitHub. [reference:2] |
+| **CallMeBot** | [callmebot.com](https://www.callmebot.com/blog/free-api-whatsapp-messages/) | API gratuita para enviar mensagens de WhatsApp. Você receberá uma **API Key**. [reference:3] |
+| **cron-job.org** | [cron-job.org](https://cron-job.org) | Serviço de ping para manter o Render sempre acordado. [reference:4] |
 
-2. Clonar o repositório e preparar ambiente
+---
+
+## ⚙️ 2. Configuração do Projeto (Passo a Passo)
+
+### 📥 2.1. Clonar o Repositório
 
 ```bash
 git clone https://github.com/sml-pn/cobranca-auto.git
 cd cobranca-auto
+```
+
+📦 2.2. Instalar Dependências
+
+```bash
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate   # No Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. Executar o servidor
+🗄️ 2.3. Configurar o Banco de Dados (Neon)
 
-```bash
-python app.py
-```
+1. Crie uma conta no Neon. 
+2. Crie um novo projeto e copie a Connection String (formato postgresql://...). 
+3. Guarde essa string para usar como DATABASE_URL.
 
-Acesse no navegador: http://localhost:5000
+☁️ 2.4. Deploy no Render
 
-Modo produção (mais rápido):
+1. Crie uma conta no Render. 
+2. Clique em New + → Web Service e conecte seu GitHub.
+3. Selecione o repositório cobranca-auto.
+4. Configure:
+   · Name: cobranca-facil (ou o nome que preferir)
+   · Runtime: Python 3
+   · Build Command: pip install -r requirements.txt
+   · Start Command: gunicorn app:app
+   · Instance Type: Free
+5. Em Environment Variables, adicione:
+   · DATABASE_URL: a string de conexão do Neon.
+   · SECRET_KEY: uma chave secreta aleatória (use o botão "Generate").
+   · CALLMEBOT_API_KEY: sua chave da API do CallMeBot.
+   · CALLMEBOT_PHONE_NUMBER: seu número de telefone com código do país (ex: 5511999999999).
+6. Clique em Create Web Service. 
 
-```bash
-pip install waitress
-waitress-serve --host=0.0.0.0 --port=5000 app:app
-```
+💬 2.5. Configurar CallMeBot (WhatsApp)
 
----
+1. Adicione o número +34 644 71 81 99 aos seus contatos. 
+2. Envie a mensagem I allow callmebot to send me messages para esse contato via WhatsApp. 
+3. Você receberá uma resposta com sua API Key. 
+4. Adicione essa chave como CALLMEBOT_API_KEY no Render.
 
-☁️ Deploy no Render (Gratuito)
+🔄 2.6. Manter o Render Sempre Ativo (cron-job.org)
 
-1. Banco de Dados no Neon
-
-· Crie uma conta gratuita em neon.tech
-· Crie um projeto e copie a string de conexão com -pooler (exemplo: postgresql://...pooler...)
-· No Render, adicione a variável de ambiente DATABASE_URL com essa string.
-
-2. Configuração no Render
-
-· Crie um Web Service conectado ao repositório GitHub.
-· Build Command:
-  ```
-  pip install -r requirements.txt && pip install -r requirements-prod.txt
-  ```
-· Start Command:
-  ```
-  gunicorn app:app
-  ```
-· Adicione a variável DATABASE_URL.
-
-Após o deploy, acesse https://cobranca-auto.onrender.com.
-
----
-
-📲 Instalando como Aplicativo (PWA)
-
-Android
-
-1. Acesse o site pelo Chrome.
-2. Toque no menu (três pontinhos) e selecione "Instalar aplicativo" ou "Adicionar à tela inicial".
-
-iOS (iPhone/iPad)
-
-1. Acesse o site pelo Safari.
-2. Toque no ícone de Compartilhar (quadrado com seta).
-3. Role e selecione "Adicionar à Tela de Início".
-4. Dê um nome e toque em Adicionar.
-5. Abra o ícone criado – o sistema abrirá em tela cheia.
-
-Após instalado, o navegador solicitará permissão para enviar notificações. Aceite.
+1. Crie uma conta no cron-job.org. 
+2. Clique em Create Cronjob.
+3. Preencha:
+   · URL: https://cobranca-facil.onrender.com/ping (ou o nome do seu serviço)
+   · Intervalo: a cada 10 minutos.
+4. Salve. Isso evita que o Render hiberne por inatividade. 
 
 ---
 
-🔔 Como Funcionam as Notificações
+🧑‍🤝‍🧑 3. Guia de Onboarding: Como Configurar um Novo Cliente
 
-· Android / Windows / Mac: Notificações nativas via Service Worker (push).
-· iOS: Funciona apenas se o site for instalado como PWA (Safari) e o dispositivo estiver com iOS 16.4+.
-· O sistema verifica a cada 30 minutos se há parcelas vencendo nos próximos 5 dias.
-· Se houver, exibe uma notificação com os detalhes do cliente.
+Para oferecer o sistema como SaaS (um deploy por cliente), você precisará repetir as etapas acima para cada novo lojista. Siga este roteiro:
 
----
+3.1. Criação de Contas para o Cliente
 
-💬 Botão "Notificar Cliente" (WhatsApp)
+Você (ou o cliente) precisará criar contas gratuitas nos seguintes serviços. É importante usar um e-mail diferente para cada cliente ou gerenciar você mesmo as credenciais.
 
-Em cada parcela pendente, há um botão verde com ícone do WhatsApp. Ao clicar, abre uma conversa com o número do cliente (cadastrado) e uma mensagem pronta:
+Serviço Ação para o Novo Cliente
+GitHub Criar uma conta gratuita. Será usada para clonar o repositório e fazer o deploy inicial. 
+Neon Criar uma conta gratuita e um novo projeto PostgreSQL. Copiar a DATABASE_URL. 
+Render Criar uma conta gratuita (pode usar login do GitHub). Conectar o repositório e criar um novo Web Service. 
+CallMeBot Ativar a API para o número de WhatsApp do cliente. O cliente receberá uma API Key própria. 
+cron-job.org Criar uma conta gratuita e configurar um cron job para pingar a URL do Render do cliente. 
 
-"Olá [Nome], tudo bem? Lembrando que a parcela [X] do seu [Carro] vence em [N] dias ([Data]). Valor: R$ [Valor]. Posso enviar o boleto/PIX? Obrigado!"
+3.2. Configuração do Ambiente do Cliente
+
+1. Clone o repositório para um novo diretório local ou faça um fork no GitHub para o cliente.
+2. Crie um novo Web Service no Render apontando para o repositório do cliente.
+3. Adicione as variáveis de ambiente específicas do cliente no Render:
+   · DATABASE_URL: a string do Neon do cliente.
+   · CALLMEBOT_API_KEY: a chave da API do CallMeBot do cliente.
+   · CALLMEBOT_PHONE_NUMBER: o número de WhatsApp do cliente.
+   · SECRET_KEY: uma nova chave secreta gerada para ele.
+4. Após o deploy, o cliente poderá acessar o sistema em https://[nome-do-cliente].onrender.com.
+5. Configure o cron-job.org para pingar a URL do cliente a cada 10 minutos.
+
+3.3. Personalização (Opcional)
+
+· Logo e Cores: Substitua os arquivos em static/icons/ e ajuste as cores no CSS do base.html.
+· Nome do Sistema: Altere o título no base.html para o nome da loja do cliente.
+
+3.4. Entrega ao Cliente
+
+Forneça ao cliente:
+
+· URL de acesso: https://[nome-do-cliente].onrender.com
+· Credenciais iniciais: admin / admin123 (ele poderá alterar depois ou recuperar via WhatsApp).
+· Instruções de uso: Como cadastrar clientes, marcar parcelas como pagas e receber os lembretes automáticos.
 
 ---
 
 🧪 Testando o Sistema
 
-1. Cadastre um cliente.
-2. Cadastre uma parcela com vencimento para hoje + 5 dias.
-3. Aguarde o agendador rodar (ou reinicie o servidor) e veja a notificação no navegador.
-4. Clique no botão do WhatsApp para simular o envio da mensagem.
+1. Acesse http://localhost:5000 (local) ou a URL do Render.
+2. Faça login com admin / admin123.
+3. Cadastre um novo cliente com vencimento para daqui a 5 dias.
+4. Aguarde o envio automático da mensagem de WhatsApp (ou force via rota /forcar-lembretes).
+5. Marque a parcela como paga e verifique se ela sai da lista de pendentes.
 
 ---
 
@@ -188,33 +191,33 @@ Em cada parcela pendente, há um botão verde com ícone do WhatsApp. Ao clicar,
 
 Modelo 1: SaaS (Assinatura Mensal)
 
-· Cobre R$ 97/mês por loja.
-· Crie um deploy separado para cada cliente (white-label).
-· Ofereça suporte e atualizações.
+· Cobre um valor mensal por loja (ex: R$ 97/mês).
+· Para cada novo cliente, repita o processo de onboarding descrito acima.
+· Gerencie as contas e ofereça suporte.
 
 Modelo 2: Venda do Projeto (Pagamento Único)
 
-· Cobre R$ 1.500 – R$ 3.000 para entregar o sistema completo configurado no servidor do cliente.
-· Inclua personalização de cores, logo e nome da loja.
+· Cobre um valor único (ex: R$ 1.500 – R$ 3.000) para entregar o sistema configurado no servidor do cliente.
+· Inclua personalização visual e treinamento.
 
-Argumento de Venda
+Modelo 3: White-Label
 
-"Quantas parcelas você já deixou de cobrar por esquecimento? Esse sistema te avisa 5 dias antes, te ajuda a ligar pro cliente no momento certo e evita calote. Em uma única cobrança recuperada, ele já se paga."
+· Ofereça o sistema com a marca do cliente (logo, cores).
+· Ideal para lojas de veículos que desejam uma solução própria.
 
 ---
 
 📝 Personalizações Possíveis
 
-· Alterar cores no base.html (variáveis CSS no <style>)
-· Alterar logo/ícone substituindo os arquivos em static/
-· Alterar texto da mensagem do WhatsApp no template index.html
-· Ajustar o prazo de antecedência (5 dias) em app.py (variável timedelta(days=5))
+· Cores e Logo: Altere o CSS no base.html e os ícones em static/icons/.
+· Mensagens de WhatsApp: Ajuste o texto na função enviar_whatsapp_callmebot no app.py.
+· Prazos de Cobrança: Modifique o parâmetro days=5 na função verificar_lembretes para alterar a antecedência do lembrete.
 
 ---
 
 🧑‍💻 Autor
 
-Desenvolvido por sml-pn
+Desenvolvido por Samuel Pena
 📧 smlpnsz.pena@gmail.com
 🐙 GitHub: sml-pn
 
@@ -226,21 +229,6 @@ Este projeto é open-source para fins educacionais. Para uso comercial, entre em
 
 ---
 
-Feito com ❤️ usando apenas um celular Android e Termux.
+Feito com ❤️ usando apenas ferramentas gratuitas.
 
 ```
-
-Depois de colar, salve o arquivo:
-- Pressione `Ctrl+O` (Volume Down + O no teclado virtual do Termux)
-- Depois `Enter` para confirmar
-- Pressione `Ctrl+X` para sair
-
-### 2️⃣ Agora adicione, faça commit e envie
-
-```bash
-git add README.md
-git commit -m "Adiciona README completo com instruções do sistema"
-git push
-```
-
-Pronto! Agora o README.md estará no seu repositório cobranca-auto no GitHub.
