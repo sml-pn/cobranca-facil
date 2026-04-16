@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -10,9 +10,12 @@ import calendar
 import pytz
 import requests
 from urllib.parse import quote
+import hashlib
+from functools import wraps
+from itsdangerous import URLSafeTimedSerializer
 
 app = Flask(__name__)
-app.secret_key = 'sua-chave-secreta-aqui-mude-para-algo-seguro'
+app.secret_key = os.environ.get('SECRET_KEY', 'sua-chave-secreta-aqui-mude-para-algo-seguro')
 
 # --- BANCO DE DADOS ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -27,6 +30,8 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+serializer = URLSafeTimedSerializer(app.secret_key)
+
 # --- FILTRO PARA FORMATAR MOEDA (R$ 1.000,00) ---
 @app.template_filter('real')
 def format_real(value):
@@ -35,6 +40,11 @@ def format_real(value):
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # --- MODELOS ---
+class Usuario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(64), nullable=False)
+
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(20), unique=True, nullable=True)
@@ -112,19 +122,15 @@ def get_proximas_parcelas(filtro_data=None):
 
     return query.order_by(Parcela.data_vencimento).all()
 
-# --- 🆕 FUNÇÃO DE ENVIO DE WHATSAPP VIA CALLMEBOT (MENSAGEM REFORMULADA) ---
+# --- FUNÇÃO DE ENVIO DE WHATSAPP VIA CALLMEBOT ---
 def enviar_whatsapp_callmebot(numero_destino, nome_cliente, parcela_num, parcela_total, carro, data_venc, valor):
     api_key = os.environ.get('CALLMEBOT_API_KEY')
     seu_numero = os.environ.get('CALLMEBOT_PHONE_NUMBER')
-    
     if not api_key or not seu_numero:
         print("❌ Erro: Chave API ou número de telefone do CallMeBot não configurados.")
         return False
-
     data_formatada = data_venc.strftime('%d/%m/%Y') if hasattr(data_venc, 'strftime') else data_venc
     valor_formatado = f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    
-    # Mensagem profissional com pedido de comprovante
     mensagem = (
         f"Olá {nome_cliente}, tudo bem?\n\n"
         f"Passando para lembrar que a parcela {parcela_num}/{parcela_total} do seu contrato ({carro}) "
@@ -134,10 +140,8 @@ def enviar_whatsapp_callmebot(numero_destino, nome_cliente, parcela_num, parcela
         f"Assim já dou baixa no sistema e evito novos lembretes.\n\n"
         f"Fico à disposição para qualquer dúvida. Tenha um ótimo dia!"
     )
-    
     mensagem_codificada = quote(mensagem)
     url = f"https://api.callmebot.com/whatsapp.php?phone={seu_numero}&text={mensagem_codificada}&apikey={api_key}"
-
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -147,18 +151,97 @@ def enviar_whatsapp_callmebot(numero_destino, nome_cliente, parcela_num, parcela
         print(f"❌ Erro ao enviar WhatsApp para {nome_cliente}: {e}")
         return False
 
-# --- ROTAS ---
+# --- DECORATOR DE AUTENTICAÇÃO ---
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'usuario' not in session:
+            flash('Faça login para acessar o sistema.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --- ROTAS DE AUTENTICAÇÃO ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['usuario']
+        senha = request.form['senha']
+        senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+        user = Usuario.query.filter_by(username=username, password_hash=senha_hash).first()
+        if user:
+            session['usuario'] = username
+            flash('Login realizado com sucesso!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Usuário ou senha incorretos.', 'danger')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('usuario', None)
+    flash('Você saiu do sistema.', 'info')
+    return redirect(url_for('login'))
+
+@app.route('/esqueci-senha', methods=['GET', 'POST'])
+def esqueci_senha():
+    if request.method == 'POST':
+        telefone = request.form['telefone'].replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
+        username = 'admin'
+        token = serializer.dumps(username, salt='password-reset')
+        reset_url = url_for('redefinir_senha', token=token, _external=True)
+        mensagem = (
+            f"🔐 Recuperação de Senha - Cobrança Fácil\n\n"
+            f"Clique no link abaixo para redefinir sua senha (válido por 1 hora):\n"
+            f"{reset_url}\n\n"
+            f"Se você não solicitou, ignore esta mensagem."
+        )
+        mensagem_codificada = quote(mensagem)
+        api_key = os.environ.get('CALLMEBOT_API_KEY')
+        seu_numero = os.environ.get('CALLMEBOT_PHONE_NUMBER')
+        if api_key and seu_numero:
+            url = f"https://api.callmebot.com/whatsapp.php?phone={seu_numero}&text={mensagem_codificada}&apikey={api_key}"
+            try:
+                requests.get(url, timeout=10)
+                flash('Um link de recuperação foi enviado para o WhatsApp cadastrado.', 'success')
+            except:
+                flash('Erro ao enviar mensagem. Tente novamente.', 'danger')
+        else:
+            flash(f'Link de recuperação: {reset_url}', 'warning')
+        return redirect(url_for('login'))
+    return render_template('esqueci_senha.html')
+
+@app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
+def redefinir_senha(token):
+    try:
+        username = serializer.loads(token, salt='password-reset', max_age=3600)
+    except:
+        flash('O link de recuperação é inválido ou expirou.', 'danger')
+        return redirect(url_for('esqueci_senha'))
+    if request.method == 'POST':
+        nova_senha = request.form['senha']
+        senha_hash = hashlib.sha256(nova_senha.encode()).hexdigest()
+        user = Usuario.query.filter_by(username=username).first()
+        if user:
+            user.password_hash = senha_hash
+            db.session.commit()
+            flash('Senha redefinida com sucesso! Faça login.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Usuário não encontrado.', 'danger')
+    return render_template('redefinir_senha.html', token=token)
+
+# --- ROTAS PROTEGIDAS ---
 @app.route('/')
+@login_required
 def index():
     hoje = hoje_sp()
-
     vence_hoje_todas = Parcela.query.filter(Parcela.data_vencimento == hoje, Parcela.pago == False).all()
     limite = hoje + timedelta(days=7)
     esta_semana_todas = Parcela.query.filter(Parcela.data_vencimento.between(hoje, limite), Parcela.pago == False).all()
     vencidas_todas = Parcela.query.filter(Parcela.data_vencimento < hoje, Parcela.pago == False).all()
     pendentes_todas = Parcela.query.filter_by(pago=False).all()
     total_receber = sum(p.valor for p in pendentes_todas)
-
     proximas_vencidas = get_proximas_parcelas('vencidas')
     proximas_hoje = get_proximas_parcelas('hoje')
     proximas_semana = get_proximas_parcelas('semana')
@@ -193,22 +276,22 @@ def ping():
     return "pong", 200
 
 @app.route('/clientes')
+@login_required
 def listar_clientes():
     clientes = Cliente.query.order_by(Cliente.data_cadastro.desc()).all()
     return render_template('clientes.html', clientes=clientes)
 
 @app.route('/cliente/novo', methods=['GET', 'POST'])
+@login_required
 def novo_cliente():
     if request.method == 'POST':
         ultimo = Cliente.query.order_by(Cliente.id.desc()).first()
         novo_id = (ultimo.id + 1) if ultimo else 1
         codigo = f"CLI-{novo_id:03d}"
-
         valor_total = float(request.form['valor_total'])
         quantidade = int(request.form['quantidade_parcelas'])
         valor_parcela = valor_total / quantidade
         dia_vencimento = int(request.form.get('dia_vencimento', 10))
-
         cliente = Cliente(
             codigo=codigo,
             nome=request.form['nome'],
@@ -221,9 +304,7 @@ def novo_cliente():
         )
         db.session.add(cliente)
         db.session.flush()
-
         data_primeira = datetime.strptime(request.form['data_primeiro_vencimento'], '%Y-%m-%d').date()
-
         for i in range(1, quantidade + 1):
             if i == 1:
                 data_vencimento = data_primeira
@@ -240,13 +321,13 @@ def novo_cliente():
                 pago=False
             )
             db.session.add(parcela)
-
         db.session.commit()
         flash(f'Cliente {codigo} cadastrado com {quantidade} parcelas!', 'success')
         return redirect(url_for('listar_clientes'))
     return render_template('novo_cliente.html')
 
 @app.route('/cliente/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar_cliente(id):
     cliente = Cliente.query.get_or_404(id)
     if request.method == 'POST':
@@ -260,6 +341,7 @@ def editar_cliente(id):
     return render_template('editar_cliente.html', cliente=cliente)
 
 @app.route('/parcela/pagar/<int:id>')
+@login_required
 def pagar_parcela(id):
     parcela = Parcela.query.get_or_404(id)
     parcela.pago = True
@@ -269,6 +351,7 @@ def pagar_parcela(id):
     return redirect(url_for('index'))
 
 @app.route('/api/lembretes')
+@login_required
 def api_lembretes():
     hoje = hoje_sp()
     limite = hoje + timedelta(days=5)
@@ -289,6 +372,7 @@ def api_lembretes():
     return {'lembretes': resultado}
 
 @app.route('/api/todas-parcelas')
+@login_required
 def api_todas_parcelas():
     parcelas = get_proximas_parcelas()
     resultado = []
@@ -308,7 +392,7 @@ def api_todas_parcelas():
         })
     return {'parcelas': resultado}
 
-# --- VERIFICAÇÃO DIÁRIA COM ENVIO AUTOMÁTICO DE WHATSAPP ---
+# --- VERIFICAÇÃO DIÁRIA COM ENVIO AUTOMÁTICO ---
 def verificar_lembretes():
     with app.app_context():
         hoje = hoje_sp()
@@ -317,13 +401,11 @@ def verificar_lembretes():
             Parcela.data_vencimento == alvo,
             Parcela.pago == False
         ).all()
-        
         if parcelas:
             print(f"\n===== {len(parcelas)} LEMBRETES GERADOS =====")
             for p in parcelas:
                 cliente = p.cliente
                 telefone_limpo = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
-                
                 enviar_whatsapp_callmebot(
                     numero_destino=telefone_limpo,
                     nome_cliente=cliente.nome,
@@ -341,9 +423,15 @@ scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
-# --- CRIAÇÃO DAS TABELAS ---
+# --- CRIAÇÃO DAS TABELAS E USUÁRIO PADRÃO ---
 with app.app_context():
     db.create_all()
+    if not Usuario.query.filter_by(username='admin').first():
+        senha_padrao = hashlib.sha256('admin123'.encode()).hexdigest()
+        admin = Usuario(username='admin', password_hash=senha_padrao)
+        db.session.add(admin)
+        db.session.commit()
+        print("✅ Usuário 'admin' criado com senha 'admin123'")
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
