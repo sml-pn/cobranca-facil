@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
@@ -26,6 +27,19 @@ if DATABASE_URL:
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cobranca.db'
+
+# 🆕 Configurações para evitar erros de conexão com Neon
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+    'connect_args': {
+        'connect_timeout': 10,
+        'keepalives': 1,
+        'keepalives_idle': 30,
+        'keepalives_interval': 10,
+        'keepalives_count': 5
+    }
+}
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -392,31 +406,42 @@ def api_todas_parcelas():
         })
     return {'parcelas': resultado}
 
-# --- VERIFICAÇÃO DIÁRIA COM ENVIO AUTOMÁTICO ---
+# --- 🆕 VERIFICAÇÃO DIÁRIA COM RETENTATIVAS ---
 def verificar_lembretes():
     with app.app_context():
-        hoje = hoje_sp()
-        alvo = hoje + timedelta(days=5)
-        parcelas = Parcela.query.filter(
-            Parcela.data_vencimento == alvo,
-            Parcela.pago == False
-        ).all()
-        if parcelas:
-            print(f"\n===== {len(parcelas)} LEMBRETES GERADOS =====")
-            for p in parcelas:
-                cliente = p.cliente
-                telefone_limpo = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
-                enviar_whatsapp_callmebot(
-                    numero_destino=telefone_limpo,
-                    nome_cliente=cliente.nome,
-                    parcela_num=p.numero,
-                    parcela_total=cliente.quantidade_parcelas,
-                    carro=cliente.carro,
-                    data_venc=p.data_vencimento,
-                    valor=p.valor
-                )
-        else:
-            print("Nenhum lembrete para hoje.")
+        max_tentativas = 3
+        for tentativa in range(max_tentativas):
+            try:
+                hoje = hoje_sp()
+                alvo = hoje + timedelta(days=5)
+                parcelas = Parcela.query.filter(
+                    Parcela.data_vencimento == alvo,
+                    Parcela.pago == False
+                ).all()
+                
+                if parcelas:
+                    print(f"\n===== {len(parcelas)} LEMBRETES GERADOS =====")
+                    for p in parcelas:
+                        cliente = p.cliente
+                        telefone_limpo = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
+                        enviar_whatsapp_callmebot(
+                            numero_destino=telefone_limpo,
+                            nome_cliente=cliente.nome,
+                            parcela_num=p.numero,
+                            parcela_total=cliente.quantidade_parcelas,
+                            carro=cliente.carro,
+                            data_venc=p.data_vencimento,
+                            valor=p.valor
+                        )
+                else:
+                    print("Nenhum lembrete para hoje.")
+                break  # Sucesso, sai do loop
+            except Exception as e:
+                print(f"Tentativa {tentativa + 1} falhou: {e}")
+                if tentativa == max_tentativas - 1:
+                    print("❌ Todas as tentativas de conexão com o banco falharam.")
+                else:
+                    time.sleep(5)  # Aguarda 5 segundos antes de tentar novamente
 
 scheduler = BackgroundScheduler(timezone='UTC')
 scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0))
