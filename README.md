@@ -1,36 +1,60 @@
+# 🚗 Cobrança Fácil
 
-# 📊 Cobrança Fácil
+Sistema inteligente de cobrança e gestão de parcelas para lojistas e prestadores de serviços. Gerencia clientes, calcula parcelas automaticamente, exibe um dashboard financeiro e envia **lembretes automáticos em três estágios** via WhatsApp (5 dias antes, 1 dia antes e no dia do vencimento).
 
-Sistema inteligente de cobrança e gestão de parcelas para lojistas. Gerencia clientes, calcula parcelas automaticamente, exibe um dashboard financeiro e envia lembretes de cobrança via WhatsApp de forma totalmente automatizada.
-
-**💰 Ideal para:** Venda como SaaS (assinatura mensal), white-label para lojas de veículos ou sistemas de gestão de cobrança em geral.
-
----
-
-## 🚀 Funcionalidades
-
-- ✅ **Cadastro Completo de Clientes**: Nome, telefone, veículo, valor total, número de parcelas e dia de vencimento.
-- ✅ **Cálculo Automático**: Geração automática de todas as parcelas com base no valor total e dia de vencimento escolhido.
-- ✅ **Dashboard Profissional**: Visão geral com cards de resumo (Vencidas, Vence Hoje, Esta Semana, Total a Receber) e lista de próximas parcelas por cliente.
-- ✅ **Gestão de Pagamentos**: Marcação de parcelas como pagas com registro da data do pagamento.
-- ✅ **Notificações Automáticas**: Envio de lembretes de cobrança via WhatsApp **5 dias antes** do vencimento de cada parcela.
-- ✅ **Recuperação de Senha**: Sistema de "Esqueci a senha" que envia um link de recuperação via WhatsApp.
-- ✅ **PWA (Progressive Web App)**: Instalável como aplicativo no celular e computador, com ícone e funcionamento offline básico.
-- ✅ **Deploy Contínuo**: Atualizações automáticas no servidor a cada `git push`.
+**💰 Monetização:** Ideal para venda como SaaS (assinatura mensal), white-label ou sistema exclusivo para um cliente.
 
 ---
 
-## 🛠️ Tecnologias e Ferramentas (Todas Gratuitas)
+## ✨ Funcionalidades
 
-| Categoria | Ferramenta | Função no Projeto |
-|-----------|------------|-------------------|
-| **Backend** | Python 3 + Flask | Lógica do servidor e rotas da aplicação. |
-| **Banco de Dados** | Neon (PostgreSQL) | Armazenamento de clientes, parcelas e usuários na nuvem (5 GB gratuitos). |
-| **Hospedagem** | Render | Servidor web gratuito que executa o código Flask 24/7. |
-| **Mensagens** | CallMeBot | API gratuita para envio de mensagens de WhatsApp. |
-| **Monitoramento** | cron-job.org | Pinga o servidor a cada 10 minutos para evitar que o Render hiberne. |
-| **Versionamento** | Git + GitHub | Controle de versão do código e deploy automático. |
-| **Frontend** | HTML, CSS, Jinja2 | Interface responsiva (funciona no celular e no PC). |
+### 🧾 Gestão de Clientes
+- Cadastro completo: nome, telefone, veículo, valor total, quantidade de parcelas e dia de vencimento.
+- Cálculo automático das parcelas com base no dia fixo escolhido.
+- Edição de dados do cliente.
+
+### 📊 Dashboard Profissional
+- Cards de resumo: **Vencidas**, **Vence Hoje**, **Esta Semana**, **Total a Receber**.
+- Lista de **próximas parcelas** de cada cliente (apenas a parcela mais urgente).
+- Filtros por status e ordenação por data, nome ou valor.
+- Interface 100% responsiva (mobile e desktop).
+
+### 💬 Lembretes Automáticos via WhatsApp
+- Envio **automático** de mensagens para os clientes em **três momentos**:
+  - **5 dias antes** do vencimento (lembrete amigável).
+  - **1 dia antes** do vencimento (alerta de urgência).
+  - **No dia do vencimento** (cobrança direta).
+- Utiliza a API gratuita [CallMeBot](https://www.callmebot.com/).
+
+### 🔐 Autenticação e Segurança
+- Tela de login com proteção de rotas.
+- Recuperação de senha via **link enviado por WhatsApp**.
+- Senha armazenada com hash SHA-256.
+
+### 📱 PWA (Progressive Web App)
+- Instalável como aplicativo no celular e computador.
+- Ícone personalizado e tela de splash.
+- Service Worker para funcionamento offline básico e cache.
+
+### ⚙️ Deploy e Monitoramento
+- Hospedagem gratuita no **Render**.
+- Banco de dados PostgreSQL gratuito no **Neon**.
+- **cron-job.org** configurado para pingar o serviço e evitar hibernação.
+- Retentativas automáticas de conexão com o banco de dados.
+
+---
+
+## 🛠️ Tecnologias Utilizadas (Todas Gratuitas)
+
+| Camada | Ferramenta | Função |
+|--------|------------|--------|
+| Backend | Python 3 + Flask | Lógica do servidor e rotas |
+| Banco de Dados | Neon (PostgreSQL) | Armazenamento na nuvem (5 GB grátis) |
+| Hospedagem | Render | Servidor web gratuito |
+| Mensagens | CallMeBot | API gratuita para WhatsApp |
+| Monitoramento | cron-job.org | Pings para manter o Render ativo |
+| Versionamento | Git + GitHub | Controle de versão e deploy automático |
+| Frontend | HTML, CSS, Jinja2 | Interface responsiva |
 
 ---
 
@@ -38,197 +62,144 @@ Sistema inteligente de cobrança e gestão de parcelas para lojistas. Gerencia c
 
 ```
 
-cobranca-auto/
-├── app.py                 # Código principal do Flask (rotas, modelos, agendador)
-├── requirements.txt       # Dependências Python do projeto
+cobranca-facil/
+├── app.py                 # Código principal do Flask
+├── requirements.txt       # Dependências Python
 ├── runtime.txt            # Versão do Python para o Render
-├── Procfile               # Comando de inicialização no Render
-├── .gitignore             # Arquivos ignorados pelo Git
-├── static/                # Arquivos estáticos (CSS, JS, ícones, PWA)
+├── Procfile               # Comando de inicialização
+├── static/
 │   ├── manifest.json      # Configuração do PWA
-│   ├── sw.js              # Service Worker (cache e notificações)
-│   └── icons/             # Ícones do app em vários tamanhos
-└── templates/             # Templates HTML (frontend)
-├── base.html          # Layout padrão (compartilhado)
-├── index.html         # Dashboard principal
+│   ├── sw.js              # Service Worker
+│   └── icons/             # Ícones do app
+└── templates/
+├── base.html          # Layout padrão
+├── index.html         # Dashboard
 ├── clientes.html      # Lista de clientes
-├── novo_cliente.html  # Formulário de cadastro
-├── editar_cliente.html# Formulário de edição
-├── login.html         # Tela de login
-├── esqueci_senha.html # Tela de recuperação de senha
-└── redefinir_senha.html# Tela para criar nova senha
+├── novo_cliente.html  # Cadastro
+├── editar_cliente.html
+├── login.html
+├── esqueci_senha.html
+└── redefinir_senha.html
 
 ```
 
 ---
 
-## 🔧 1. Pré-requisitos (Contas e Configurações)
+## 🔧 Guia de Instalação e Configuração
 
-Antes de rodar o projeto, você precisa criar contas gratuitas nas seguintes plataformas:
+### 1. Pré-requisitos
+Crie contas gratuitas nos seguintes serviços:
 
-| Ferramenta | Link para Cadastro | O que você vai obter |
-|------------|-------------------|----------------------|
-| **GitHub** | [github.com/join](https://github.com/join) | Conta para armazenar o código e fazer deploy automático. [reference:0] |
-| **Neon** | [neon.tech](https://neon.tech) | Banco de dados PostgreSQL gratuito (5 GB). Você receberá uma **Connection String**. [reference:1] |
-| **Render** | [render.com](https://render.com) | Hospedagem gratuita para a aplicação. Conecte com sua conta do GitHub. [reference:2] |
-| **CallMeBot** | [callmebot.com](https://www.callmebot.com/blog/free-api-whatsapp-messages/) | API gratuita para enviar mensagens de WhatsApp. Você receberá uma **API Key**. [reference:3] |
-| **cron-job.org** | [cron-job.org](https://cron-job.org) | Serviço de ping para manter o Render sempre acordado. [reference:4] |
+| Serviço | Link | Objetivo |
+|---------|------|----------|
+| GitHub | [github.com](https://github.com) | Armazenar o código |
+| Neon | [neon.tech](https://neon.tech) | Banco de dados PostgreSQL |
+| Render | [render.com](https://render.com) | Hospedagem |
+| CallMeBot | [callmebot.com](https://www.callmebot.com/blog/free-api-whatsapp-messages/) | API do WhatsApp |
+| cron-job.org | [cron-job.org](https://cron-job.org) | Ping para evitar hibernação |
 
----
+### 2. Configuração do Banco de Dados (Neon)
+1. Crie um projeto no Neon.
+2. Copie a **Connection String** (formato `postgresql://...`).
+3. Ela será usada como variável `DATABASE_URL` no Render.
 
-## ⚙️ 2. Configuração do Projeto (Passo a Passo)
+### 3. Configuração do CallMeBot
+1. Adicione o número `+34 644 71 81 99` aos seus contatos.
+2. Envie a mensagem `I allow callmebot to send me messages` por WhatsApp.
+3. Guarde a **API Key** recebida.
 
-### 📥 2.1. Clonar o Repositório
+### 4. Deploy no Render
+1. Faça um fork ou clone deste repositório no GitHub.
+2. No Render, crie um novo **Web Service** conectado ao repositório.
+3. Configure:
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `gunicorn app:app`
+   - **Instance Type:** Free
+4. Adicione as **variáveis de ambiente**:
+   - `DATABASE_URL`: string de conexão do Neon.
+   - `SECRET_KEY`: uma chave secreta (gere uma aleatória).
+   - `CALLMEBOT_API_KEY`: sua API Key.
+   - `CALLMEBOT_PHONE_NUMBER`: seu número com código do país (ex: `5511999999999`).
+5. Clique em **Create Web Service**.
 
-```bash
-git clone https://github.com/sml-pn/cobranca-auto.git
-cd cobranca-auto
-```
-
-📦 2.2. Instalar Dependências
-
-```bash
-python -m venv venv
-source venv/bin/activate   # No Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-🗄️ 2.3. Configurar o Banco de Dados (Neon)
-
-1. Crie uma conta no Neon. 
-2. Crie um novo projeto e copie a Connection String (formato postgresql://...). 
-3. Guarde essa string para usar como DATABASE_URL.
-
-☁️ 2.4. Deploy no Render
-
-1. Crie uma conta no Render. 
-2. Clique em New + → Web Service e conecte seu GitHub.
-3. Selecione o repositório cobranca-auto.
-4. Configure:
-   · Name: cobranca-facil (ou o nome que preferir)
-   · Runtime: Python 3
-   · Build Command: pip install -r requirements.txt
-   · Start Command: gunicorn app:app
-   · Instance Type: Free
-5. Em Environment Variables, adicione:
-   · DATABASE_URL: a string de conexão do Neon.
-   · SECRET_KEY: uma chave secreta aleatória (use o botão "Generate").
-   · CALLMEBOT_API_KEY: sua chave da API do CallMeBot.
-   · CALLMEBOT_PHONE_NUMBER: seu número de telefone com código do país (ex: 5511999999999).
-6. Clique em Create Web Service. 
-
-💬 2.5. Configurar CallMeBot (WhatsApp)
-
-1. Adicione o número +34 644 71 81 99 aos seus contatos. 
-2. Envie a mensagem I allow callmebot to send me messages para esse contato via WhatsApp. 
-3. Você receberá uma resposta com sua API Key. 
-4. Adicione essa chave como CALLMEBOT_API_KEY no Render.
-
-🔄 2.6. Manter o Render Sempre Ativo (cron-job.org)
-
-1. Crie uma conta no cron-job.org. 
-2. Clique em Create Cronjob.
-3. Preencha:
-   · URL: https://cobranca-facil.onrender.com/ping (ou o nome do seu serviço)
-   · Intervalo: a cada 10 minutos.
-4. Salve. Isso evita que o Render hiberne por inatividade. 
+### 5. Manter o Render Ativo (cron-job.org)
+1. Crie um cron job no cron-job.org.
+2. URL: `https://seu-app.onrender.com/ping`
+3. Intervalo: a cada **10 minutos**.
 
 ---
 
-🧑‍🤝‍🧑 3. Guia de Onboarding: Como Configurar um Novo Cliente
+## 🧑‍🤝‍🧑 Guia para Configurar um Novo Cliente (SaaS)
 
-Para oferecer o sistema como SaaS (um deploy por cliente), você precisará repetir as etapas acima para cada novo lojista. Siga este roteiro:
+Se você for vender o sistema para vários lojistas, repita os passos abaixo para cada cliente:
 
-3.1. Criação de Contas para o Cliente
+### 3.1. Criação de Contas para o Cliente
+Cada cliente precisará de contas próprias (ou você gerencia para ele):
+- **GitHub**: para clonar o repositório.
+- **Neon**: para o banco de dados.
+- **Render**: para a hospedagem.
+- **CallMeBot**: para o envio de WhatsApp (usando o número do cliente).
+- **cron-job.org**: para o ping.
 
-Você (ou o cliente) precisará criar contas gratuitas nos seguintes serviços. É importante usar um e-mail diferente para cada cliente ou gerenciar você mesmo as credenciais.
-
-Serviço Ação para o Novo Cliente
-GitHub Criar uma conta gratuita. Será usada para clonar o repositório e fazer o deploy inicial. 
-Neon Criar uma conta gratuita e um novo projeto PostgreSQL. Copiar a DATABASE_URL. 
-Render Criar uma conta gratuita (pode usar login do GitHub). Conectar o repositório e criar um novo Web Service. 
-CallMeBot Ativar a API para o número de WhatsApp do cliente. O cliente receberá uma API Key própria. 
-cron-job.org Criar uma conta gratuita e configurar um cron job para pingar a URL do Render do cliente. 
-
-3.2. Configuração do Ambiente do Cliente
-
-1. Clone o repositório para um novo diretório local ou faça um fork no GitHub para o cliente.
+### 3.2. Configuração do Ambiente
+1. Clone o repositório para o cliente (ou use um fork).
 2. Crie um novo Web Service no Render apontando para o repositório do cliente.
-3. Adicione as variáveis de ambiente específicas do cliente no Render:
-   · DATABASE_URL: a string do Neon do cliente.
-   · CALLMEBOT_API_KEY: a chave da API do CallMeBot do cliente.
-   · CALLMEBOT_PHONE_NUMBER: o número de WhatsApp do cliente.
-   · SECRET_KEY: uma nova chave secreta gerada para ele.
-4. Após o deploy, o cliente poderá acessar o sistema em https://[nome-do-cliente].onrender.com.
-5. Configure o cron-job.org para pingar a URL do cliente a cada 10 minutos.
+3. Adicione as variáveis de ambiente específicas do cliente.
+4. Após o deploy, o cliente acessa `https://[nome-do-cliente].onrender.com`.
 
-3.3. Personalização (Opcional)
-
-· Logo e Cores: Substitua os arquivos em static/icons/ e ajuste as cores no CSS do base.html.
-· Nome do Sistema: Altere o título no base.html para o nome da loja do cliente.
-
-3.4. Entrega ao Cliente
-
-Forneça ao cliente:
-
-· URL de acesso: https://[nome-do-cliente].onrender.com
-· Credenciais iniciais: admin / admin123 (ele poderá alterar depois ou recuperar via WhatsApp).
-· Instruções de uso: Como cadastrar clientes, marcar parcelas como pagas e receber os lembretes automáticos.
+### 3.3. Personalização (Opcional)
+- Substitua os ícones em `static/icons/`.
+- Altere as cores no `base.html`.
+- Modifique o título e o nome do sistema.
 
 ---
 
-🧪 Testando o Sistema
+## 🧪 Testando o Sistema
 
-1. Acesse http://localhost:5000 (local) ou a URL do Render.
-2. Faça login com admin / admin123.
-3. Cadastre um novo cliente com vencimento para daqui a 5 dias.
-4. Aguarde o envio automático da mensagem de WhatsApp (ou force via rota /forcar-lembretes).
-5. Marque a parcela como paga e verifique se ela sai da lista de pendentes.
-
----
-
-💰 Como Vender Este Sistema
-
-Modelo 1: SaaS (Assinatura Mensal)
-
-· Cobre um valor mensal por loja (ex: R$ 97/mês).
-· Para cada novo cliente, repita o processo de onboarding descrito acima.
-· Gerencie as contas e ofereça suporte.
-
-Modelo 2: Venda do Projeto (Pagamento Único)
-
-· Cobre um valor único (ex: R$ 1.500 – R$ 3.000) para entregar o sistema configurado no servidor do cliente.
-· Inclua personalização visual e treinamento.
-
-Modelo 3: White-Label
-
-· Ofereça o sistema com a marca do cliente (logo, cores).
-· Ideal para lojas de veículos que desejam uma solução própria.
+1. Acesse a URL do Render e faça login com:
+   - **Usuário:** `admin`
+   - **Senha:** `admin123`
+2. Cadastre um cliente com vencimento para **hoje + 5 dias**.
+3. Aguarde o agendador diário (às 5h da manhã) ou force via rota `/forcar-lembretes` (se adicionada temporariamente).
+4. Verifique se as mensagens de WhatsApp chegam nos momentos corretos.
 
 ---
 
-📝 Personalizações Possíveis
+## 💰 Modelos de Negócio
 
-· Cores e Logo: Altere o CSS no base.html e os ícones em static/icons/.
-· Mensagens de WhatsApp: Ajuste o texto na função enviar_whatsapp_callmebot no app.py.
-· Prazos de Cobrança: Modifique o parâmetro days=5 na função verificar_lembretes para alterar a antecedência do lembrete.
-
----
-
-🧑‍💻 Autor
-
-Desenvolvido por Samuel Pena
-📧 smlpnsz.pena@gmail.com
-🐙 GitHub: sml-pn
+| Modelo | Descrição | Preço Sugerido |
+|--------|-----------|----------------|
+| **SaaS Mensal** | Hospedagem gerenciada por você, cada cliente paga mensalidade. | R$ 97/mês |
+| **Venda Única** | Entrega do sistema configurado no servidor do cliente. | R$ 1.500 – R$ 3.000 |
+| **White-Label** | Sistema personalizado com a marca do cliente. | Negociável |
 
 ---
 
-📄 Licença
+## 📝 Personalizações Possíveis
+
+- Texto das mensagens de WhatsApp (função `enviar_whatsapp_direto`).
+- Prazos dos lembretes (parâmetros `days=5`, `days=1`, `days=0`).
+- Cores e logo (CSS e ícones).
+- Adicionar novos relatórios (PDF/Excel).
+
+---
+
+## 🧑‍💻 Autor
+
+Desenvolvido por **Samuel Pena**  
+📧 smlpnsz.pena@gmail.com  
+🐙 GitHub: [sml-pn](https://github.com/sml-pn)
+
+---
+
+## 📄 Licença
 
 Este projeto é open-source para fins educacionais. Para uso comercial, entre em contato.
 
 ---
 
-Feito com ❤️ usando apenas ferramentas gratuitas.
-
+**Feito com ❤️ usando apenas ferramentas gratuitas.**
 ```
+
+---
+
