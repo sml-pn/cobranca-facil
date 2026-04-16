@@ -28,7 +28,7 @@ if DATABASE_URL:
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cobranca.db'
 
-# 🆕 Configurações para evitar erros de conexão com Neon
+# Configurações para evitar erros de conexão com Neon
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 300,
@@ -136,33 +136,21 @@ def get_proximas_parcelas(filtro_data=None):
 
     return query.order_by(Parcela.data_vencimento).all()
 
-# --- FUNÇÃO DE ENVIO DE WHATSAPP VIA CALLMEBOT ---
-def enviar_whatsapp_callmebot(numero_destino, nome_cliente, parcela_num, parcela_total, carro, data_venc, valor):
+# --- FUNÇÃO DE ENVIO DE WHATSAPP (SIMPLES) ---
+def enviar_whatsapp_direto(numero_destino, mensagem):
     api_key = os.environ.get('CALLMEBOT_API_KEY')
     seu_numero = os.environ.get('CALLMEBOT_PHONE_NUMBER')
     if not api_key or not seu_numero:
         print("❌ Erro: Chave API ou número de telefone do CallMeBot não configurados.")
         return False
-    data_formatada = data_venc.strftime('%d/%m/%Y') if hasattr(data_venc, 'strftime') else data_venc
-    valor_formatado = f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    mensagem = (
-        f"Olá {nome_cliente}, tudo bem?\n\n"
-        f"Passando para lembrar que a parcela {parcela_num}/{parcela_total} do seu contrato ({carro}) "
-        f"vence em {data_formatada}.\n"
-        f"💵 Valor: R$ {valor_formatado}\n\n"
-        f"Após efetuar o pagamento, por favor, envie o comprovante por aqui mesmo. "
-        f"Assim já dou baixa no sistema e evito novos lembretes.\n\n"
-        f"Fico à disposição para qualquer dúvida. Tenha um ótimo dia!"
-    )
     mensagem_codificada = quote(mensagem)
     url = f"https://api.callmebot.com/whatsapp.php?phone={seu_numero}&text={mensagem_codificada}&apikey={api_key}"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
-        print(f"✅ WhatsApp enviado para {nome_cliente} ({numero_destino})")
         return True
     except Exception as e:
-        print(f"❌ Erro ao enviar WhatsApp para {nome_cliente}: {e}")
+        print(f"❌ Erro ao enviar WhatsApp: {e}")
         return False
 
 # --- DECORATOR DE AUTENTICAÇÃO ---
@@ -406,42 +394,90 @@ def api_todas_parcelas():
         })
     return {'parcelas': resultado}
 
-# --- 🆕 VERIFICAÇÃO DIÁRIA COM RETENTATIVAS ---
+# --- VERIFICAÇÃO DIÁRIA COM MÚLTIPLOS LEMBRETES (5 dias, 1 dia, hoje) ---
 def verificar_lembretes():
     with app.app_context():
         max_tentativas = 3
         for tentativa in range(max_tentativas):
             try:
                 hoje = hoje_sp()
-                alvo = hoje + timedelta(days=5)
-                parcelas = Parcela.query.filter(
-                    Parcela.data_vencimento == alvo,
+                
+                # 1. Parcelas que vencem em 5 dias
+                alvo_5dias = hoje + timedelta(days=5)
+                parcelas_5dias = Parcela.query.filter(
+                    Parcela.data_vencimento == alvo_5dias,
                     Parcela.pago == False
                 ).all()
                 
-                if parcelas:
-                    print(f"\n===== {len(parcelas)} LEMBRETES GERADOS =====")
-                    for p in parcelas:
-                        cliente = p.cliente
-                        telefone_limpo = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
-                        enviar_whatsapp_callmebot(
-                            numero_destino=telefone_limpo,
-                            nome_cliente=cliente.nome,
-                            parcela_num=p.numero,
-                            parcela_total=cliente.quantidade_parcelas,
-                            carro=cliente.carro,
-                            data_venc=p.data_vencimento,
-                            valor=p.valor
-                        )
-                else:
-                    print("Nenhum lembrete para hoje.")
+                # 2. Parcelas que vencem amanhã (1 dia)
+                alvo_amanha = hoje + timedelta(days=1)
+                parcelas_amanha = Parcela.query.filter(
+                    Parcela.data_vencimento == alvo_amanha,
+                    Parcela.pago == False
+                ).all()
+                
+                # 3. Parcelas que vencem hoje
+                parcelas_hoje = Parcela.query.filter(
+                    Parcela.data_vencimento == hoje,
+                    Parcela.pago == False
+                ).all()
+                
+                total_envios = 0
+                
+                # Envia para 5 dias
+                for p in parcelas_5dias:
+                    cliente = p.cliente
+                    telefone_limpo = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
+                    mensagem = (
+                        f"Olá {cliente.nome}, tudo bem?\n\n"
+                        f"Passando para lembrar que a parcela {p.numero}/{cliente.quantidade_parcelas} do seu contrato ({cliente.carro}) "
+                        f"vence em 5 dias, no dia {p.data_vencimento.strftime('%d/%m/%Y')}.\n"
+                        f"💵 Valor: R$ {p.valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + "\n\n"
+                        f"Se já tiver efetuado o pagamento, por favor, desconsidere esta mensagem.\n"
+                        f"Fico à disposição para qualquer dúvida. Tenha um ótimo dia!"
+                    )
+                    enviar_whatsapp_direto(telefone_limpo, mensagem)
+                    total_envios += 1
+                
+                # Envia para amanhã
+                for p in parcelas_amanha:
+                    cliente = p.cliente
+                    telefone_limpo = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
+                    mensagem = (
+                        f"Olá {cliente.nome}, tudo bem?\n\n"
+                        f"⚠️ Lembrete importante: a parcela {p.numero}/{cliente.quantidade_parcelas} do seu contrato ({cliente.carro}) "
+                        f"vence AMANHÃ, dia {p.data_vencimento.strftime('%d/%m/%Y')}.\n"
+                        f"💵 Valor: R$ {p.valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + "\n\n"
+                        f"Não deixe para a última hora! Qualquer dúvida, estou aqui."
+                    )
+                    enviar_whatsapp_direto(telefone_limpo, mensagem)
+                    total_envios += 1
+                
+                # Envia para hoje
+                for p in parcelas_hoje:
+                    cliente = p.cliente
+                    telefone_limpo = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
+                    mensagem = (
+                        f"Olá {cliente.nome}, tudo bem?\n\n"
+                        f"🔴 A parcela {p.numero}/{cliente.quantidade_parcelas} do seu contrato ({cliente.carro}) "
+                        f"vence HOJE, dia {p.data_vencimento.strftime('%d/%m/%Y')}.\n"
+                        f"💵 Valor: R$ {p.valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + "\n\n"
+                        f"Por favor, efetue o pagamento o quanto antes para evitar atraso. "
+                        f"Após o pagamento, envie o comprovante por aqui mesmo.\n\n"
+                        f"Obrigado!"
+                    )
+                    enviar_whatsapp_direto(telefone_limpo, mensagem)
+                    total_envios += 1
+                
+                print(f"\n===== {total_envios} LEMBRETES GERADOS =====")
                 break  # Sucesso, sai do loop
+                
             except Exception as e:
                 print(f"Tentativa {tentativa + 1} falhou: {e}")
                 if tentativa == max_tentativas - 1:
                     print("❌ Todas as tentativas de conexão com o banco falharam.")
                 else:
-                    time.sleep(5)  # Aguarda 5 segundos antes de tentar novamente
+                    time.sleep(5)
 
 scheduler = BackgroundScheduler(timezone='UTC')
 scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0))
