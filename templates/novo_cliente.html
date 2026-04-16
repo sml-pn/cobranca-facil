@@ -26,7 +26,8 @@
         
         <div class="form-group">
             <label for="valor_total"><i class="fas fa-dollar-sign"></i> Valor Total do Financiamento (R$) *</label>
-            <input type="number" id="valor_total" name="valor_total" step="0.01" min="0.01" placeholder="Ex: 15000.00" required onkeyup="calcularParcela()">
+            <input type="text" id="valor_total" name="valor_total_display" placeholder="Ex: 1.500,00" required oninput="mascaraMoeda(this)" onkeyup="calcularParcela()">
+            <input type="hidden" id="valor_total_hidden" name="valor_total">
         </div>
         
         <div class="form-group">
@@ -62,14 +63,50 @@
 </div>
 
 <script>
-    function calcularParcela() {
-        const valorTotal = parseFloat(document.getElementById('valor_total').value) || 0;
-        const quantidade = parseInt(document.getElementById('quantidade_parcelas').value) || 1;
-        const valorParcela = valorTotal / quantidade;
-        const valorFormatado = valorParcela.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('valor_parcela_preview').value = `R$ ${valorFormatado} (${quantidade}x)`;
+    // Máscara para o campo de valor total (formato R$ 1.000,00)
+    function mascaraMoeda(input) {
+        let value = input.value.replace(/\D/g, ''); // Remove tudo que não for dígito
+        if (value === '') {
+            input.value = '';
+            document.getElementById('valor_total_hidden').value = '';
+            calcularParcela();
+            return;
+        }
+        value = (parseInt(value) / 100).toFixed(2);
+        let parts = value.split('.');
+        let inteiro = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        let decimal = parts[1];
+        input.value = `${inteiro},${decimal}`;
+        
+        // Atualiza o campo hidden com o valor numérico (sem formatação)
+        let numericValue = value.replace(',', '.');
+        document.getElementById('valor_total_hidden').value = numericValue;
+        
+        calcularParcela();
     }
     
+    // Calcula e exibe o valor da parcela com formatação
+    function calcularParcela() {
+        let valorTotalStr = document.getElementById('valor_total').value;
+        let valorTotal = 0;
+        if (valorTotalStr) {
+            // Converte de "1.000,00" para número
+            valorTotal = parseFloat(valorTotalStr.replace(/\./g, '').replace(',', '.')) || 0;
+        }
+        const quantidade = parseInt(document.getElementById('quantidade_parcelas').value) || 1;
+        let valorParcela = valorTotal / quantidade;
+        
+        if (isNaN(valorParcela)) valorParcela = 0;
+        
+        let partes = valorParcela.toFixed(2).split('.');
+        let inteiro = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        let decimal = partes[1];
+        let valorFormatado = `R$ ${inteiro},${decimal}`;
+        
+        document.getElementById('valor_parcela_preview').value = `${valorFormatado} (${quantidade}x)`;
+    }
+    
+    // Máscara para telefone
     document.getElementById('telefone').addEventListener('input', function(e) {
         let value = e.target.value.replace(/\D/g, '');
         if (value.length >= 11) {
@@ -82,6 +119,7 @@
         e.target.value = value;
     });
     
+    // Data padrão para o primeiro vencimento (30 dias à frente)
     const hoje = new Date();
     hoje.setDate(hoje.getDate() + 30);
     document.getElementById('data_primeiro_vencimento').value = hoje.toISOString().split('T')[0];
