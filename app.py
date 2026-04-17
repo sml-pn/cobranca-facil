@@ -154,7 +154,7 @@ def get_dados_pix():
         f"Banco: {config.banco}"
     )
 
-# --- 🆕 FUNÇÃO DE ENVIO DE WHATSAPP (COM CORREÇÃO DO FORMATO DO NÚMERO) ---
+# --- FUNÇÃO DE ENVIO DE WHATSAPP (COM CORREÇÃO DO FORMATO DO NÚMERO) ---
 def enviar_whatsapp_direto(numero_destino, mensagem):
     """Envia uma mensagem de WhatsApp via CallMeBot."""
     api_key = os.environ.get('CALLMEBOT_API_KEY')
@@ -446,6 +446,7 @@ def api_todas_parcelas():
 # --- VERIFICAÇÃO DIÁRIA COM MÚLTIPLOS LEMBRETES E DADOS PIX (COM CORREÇÃO DE NÚMERO) ---
 def verificar_lembretes():
     with app.app_context():
+        print("\n🚀 Agendador acionado! Iniciando verificação de lembretes...")
         max_tentativas = 3
         for tentativa in range(max_tentativas):
             try:
@@ -510,7 +511,7 @@ def verificar_lembretes():
                     enviar_whatsapp_direto(tel, msg)
                     total_envios += 1
                 
-                print(f"\n===== {total_envios} LEMBRETES GERADOS =====")
+                print(f"===== {total_envios} LEMBRETES GERADOS =====\n")
                 break
             except Exception as e:
                 print(f"Tentativa {tentativa + 1} falhou: {e}")
@@ -519,8 +520,9 @@ def verificar_lembretes():
                 else:
                     time.sleep(5)
 
+# 🕒 AGENDADOR AJUSTADO PARA 10:10 UTC (TESTE)
 scheduler = BackgroundScheduler(timezone='UTC')
-scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=12, minute=40))
+scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=10, minute=10))
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
