@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Configurações - Cobrança Fácil{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-header">
+        <h2><i class="fas fa-cog"></i> Configurações do Pix</h2>
+    </div>
+    <form method="POST">
+        <div class="form-group">
+            <label for="tipo_chave">Tipo de chave</label>
+            <select name="tipo_chave" id="tipo_chave" class="form-control">
+                <option value="telefone" {% if config.tipo_chave == 'telefone' %}selected{% endif %}>Telefone</option>
+                <option value="cpf" {% if config.tipo_chave == 'cpf' %}selected{% endif %}>CPF</option>
+                <option value="cnpj" {% if config.tipo_chave == 'cnpj' %}selected{% endif %}>CNPJ</option>
+                <option value="email" {% if config.tipo_chave == 'email' %}selected{% endif %}>E-mail</option>
+                <option value="aleatoria" {% if config.tipo_chave == 'aleatoria' %}selected{% endif %}>Aleatória</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="chave_pix">Chave Pix</label>
+            <input type="text" name="chave_pix" id="chave_pix" value="{{ config.chave_pix }}" placeholder="Sua chave Pix" required>
+        </div>
+        <div class="form-group">
+            <label for="nome_titular">Nome do titular</label>
+            <input type="text" name="nome_titular" id="nome_titular" value="{{ config.nome_titular }}" placeholder="Nome completo" required>
+        </div>
+        <div class="form-group">
+            <label for="banco">Banco</label>
+            <input type="text" name="banco" id="banco" value="{{ config.banco }}" placeholder="Ex: Nubank, Itaú, Bradesco" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn">Salvar configurações</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
