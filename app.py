@@ -58,9 +58,9 @@ class Usuario(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(64), nullable=False)
 
-class Configuracao(db.Model):   # 🆕 Tabela para dados Pix
+class Configuracao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tipo_chave = db.Column(db.String(20), default='telefone')  # cpf, cnpj, telefone, email, aleatoria
+    tipo_chave = db.Column(db.String(20), default='telefone')
     chave_pix = db.Column(db.String(100), nullable=False, default='')
     nome_titular = db.Column(db.String(100), nullable=False, default='')
     banco = db.Column(db.String(50), nullable=False, default='')
@@ -142,7 +142,7 @@ def get_proximas_parcelas(filtro_data=None):
 
     return query.order_by(Parcela.data_vencimento).all()
 
-# --- 🆕 FUNÇÃO PARA OBTER DADOS PIX (formatação) ---
+# --- FUNÇÃO PARA OBTER DADOS PIX (formatação) ---
 def get_dados_pix():
     config = Configuracao.query.first()
     if not config or not config.chave_pix:
@@ -154,15 +154,15 @@ def get_dados_pix():
         f"Banco: {config.banco}"
     )
 
-# --- FUNÇÃO DE ENVIO DE WHATSAPP (SIMPLES) ---
+# --- 🆕 FUNÇÃO DE ENVIO DE WHATSAPP (CORRIGIDA) ---
 def enviar_whatsapp_direto(numero_destino, mensagem):
+    """Envia uma mensagem de WhatsApp via CallMeBot."""
     api_key = os.environ.get('CALLMEBOT_API_KEY')
-    seu_numero = os.environ.get('CALLMEBOT_PHONE_NUMBER')
-    if not api_key or not seu_numero:
-        print("❌ Erro: Chave API ou número de telefone do CallMeBot não configurados.")
+    if not api_key:
+        print("❌ Erro: Chave API do CallMeBot não configurada.")
         return False
     mensagem_codificada = quote(mensagem)
-    url = f"https://api.callmebot.com/whatsapp.php?phone={seu_numero}&text={mensagem_codificada}&apikey={api_key}"
+    url = f"https://api.callmebot.com/whatsapp.php?phone={numero_destino}&text={mensagem_codificada}&apikey={api_key}"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -251,7 +251,7 @@ def redefinir_senha(token):
             flash('Usuário não encontrado.', 'danger')
     return render_template('redefinir_senha.html', token=token)
 
-# --- 🆕 ROTA DE CONFIGURAÇÕES (PIX) ---
+# --- ROTA DE CONFIGURAÇÕES (PIX) ---
 @app.route('/configuracoes', methods=['GET', 'POST'])
 @login_required
 def configuracoes():
@@ -433,14 +433,14 @@ def api_todas_parcelas():
         })
     return {'parcelas': resultado}
 
-# --- VERIFICAÇÃO DIÁRIA COM MÚLTIPLOS LEMBRETES E DADOS PIX ---
+# --- VERIFICAÇÃO DIÁRIA COM MÚLTIPLOS LEMBRETES E DADOS PIX (CORRIGIDA) ---
 def verificar_lembretes():
     with app.app_context():
         max_tentativas = 3
         for tentativa in range(max_tentativas):
             try:
                 hoje = hoje_sp()
-                dados_pix = get_dados_pix()  # 🆕 inclui Pix nas mensagens
+                dados_pix = get_dados_pix()
                 
                 # 5 dias
                 alvo_5dias = hoje + timedelta(days=5)
