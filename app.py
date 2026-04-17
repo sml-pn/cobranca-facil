@@ -520,7 +520,7 @@ def verificar_lembretes():
                     time.sleep(5)
 
 scheduler = BackgroundScheduler(timezone='UTC')
-scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=12, minute=10))
+scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0))
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
