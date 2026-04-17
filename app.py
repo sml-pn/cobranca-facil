@@ -154,15 +154,25 @@ def get_dados_pix():
         f"Banco: {config.banco}"
     )
 
-# --- 🆕 FUNÇÃO DE ENVIO DE WHATSAPP (CORRIGIDA) ---
+# --- 🆕 FUNÇÃO DE ENVIO DE WHATSAPP (COM CORREÇÃO DO FORMATO DO NÚMERO) ---
 def enviar_whatsapp_direto(numero_destino, mensagem):
     """Envia uma mensagem de WhatsApp via CallMeBot."""
     api_key = os.environ.get('CALLMEBOT_API_KEY')
     if not api_key:
         print("❌ Erro: Chave API do CallMeBot não configurada.")
         return False
+
+    # Limpa o número: remove tudo que não for dígito
+    numero_limpo = ''.join(filter(str.isdigit, numero_destino))
+    
+    # Se o número não começar com '55', adiciona
+    if not numero_limpo.startswith('55'):
+        numero_limpo = '55' + numero_limpo
+    
+    print(f"📱 Enviando WhatsApp para: {numero_limpo}")
+    
     mensagem_codificada = quote(mensagem)
-    url = f"https://api.callmebot.com/whatsapp.php?phone={numero_destino}&text={mensagem_codificada}&apikey={api_key}"
+    url = f"https://api.callmebot.com/whatsapp.php?phone={numero_limpo}&text={mensagem_codificada}&apikey={api_key}"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -433,7 +443,7 @@ def api_todas_parcelas():
         })
     return {'parcelas': resultado}
 
-# --- VERIFICAÇÃO DIÁRIA COM MÚLTIPLOS LEMBRETES E DADOS PIX (CORRIGIDA) ---
+# --- VERIFICAÇÃO DIÁRIA COM MÚLTIPLOS LEMBRETES E DADOS PIX (COM CORREÇÃO DE NÚMERO) ---
 def verificar_lembretes():
     with app.app_context():
         max_tentativas = 3
