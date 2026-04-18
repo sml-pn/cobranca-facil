@@ -483,15 +483,16 @@ scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
-# --- CRIAÇÃO DAS TABELAS E USUÁRIO PADRÃO ---
+# --- CRIAÇÃO DAS TABELAS E USUÁRIO PADRÃO (COM RESET TEMPORÁRIO) ---
 with app.app_context():
+    db.drop_all()      # ⚠️ APAGA TODO O BANCO E RECRIA
     db.create_all()
     if not Usuario.query.filter_by(username='admin').first():
         admin = Usuario(username='admin', telefone='5585989034395')  # substitua pelo seu número
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
-        print("✅ Usuário 'admin' criado com senha 'admin123'")
+        print("✅ Banco recriado e usuário 'admin' configurado.")
     if not Configuracao.query.first():
         config = Configuracao(tipo_chave='telefone', chave_pix='', nome_titular='', banco='')
         db.session.add(config)
