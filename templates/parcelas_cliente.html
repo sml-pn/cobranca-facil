@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Parcelas - {{ cliente.nome }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list-ul"></i> Parcelas de {{ cliente.nome }}</h2>
+        <a href="{{ url_for('listar_clientes') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Voltar</a>
+    </div>
+
+    <div style="margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap;">
+        <div><strong>Código:</strong> {{ cliente.codigo or 'CLI-' ~ cliente.id }}</div>
+        <div><strong>Veículo:</strong> {{ cliente.carro }}</div>
+        <div><strong>Valor Total:</strong> {{ cliente.valor_total|real }}</div>
+        <div><strong>Dia de Vencimento:</strong> Dia {{ cliente.dia_vencimento }}</div>
+    </div>
+
+    {% if parcelas %}
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nº</th>
+                    <th>Vencimento</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Data Pagamento</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in parcelas %}
+                <tr>
+                    <td>{{ p.numero }}/{{ cliente.quantidade_parcelas }}</td>
+                    <td>{{ p.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ p.valor|real }}</td>
+                    <td>
+                        {% if p.pago %}
+                            <span class="badge success"><i class="fas fa-check"></i> Pago</span>
+                        {% else %}
+                            <span class="badge" style="background: #fff3cd; color: #856404;"><i class="fas fa-clock"></i> Pendente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.data_pagamento %}
+                            {{ p.data_pagamento.strftime('%d/%m/%Y %H:%M') }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not p.pago %}
+                        <form method="POST" action="{{ url_for('pagar_parcela', id=p.id) }}" style="display: inline;">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success" style="padding: 0.2rem 0.8rem; font-size: 0.8rem;" onclick="return confirm('Confirmar pagamento?')">
+                                <i class="fas fa-check"></i> Marcar Paga
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="text-align: center; padding: 2rem;">Nenhuma parcela encontrada.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -35,9 +35,14 @@
                     <td>{{ c.quantidade_parcelas }}x de {{ c.valor_parcela|real }}</td>
                     <td>Dia {{ c.dia_vencimento }}</td>
                     <td>
-                        <a href="{{ url_for('editar_cliente', id=c.id) }}" class="btn btn-outline" style="padding: 0.3rem 1rem;">
-                            <i class="fas fa-edit"></i> Editar
-                        </a>
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            <a href="{{ url_for('editar_cliente', id=c.id) }}" class="btn btn-outline" style="padding: 0.3rem 0.8rem;">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <a href="{{ url_for('parcelas_cliente', id=c.id) }}" class="btn btn-outline" style="padding: 0.3rem 0.8rem; background: #1e3c72; color: white; border: none;">
+                                <i class="fas fa-list"></i> Parcelas
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

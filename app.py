@@ -165,7 +165,6 @@ def generate_csrf_token():
         session['_csrf_token'] = secrets.token_hex(16)
     return session['_csrf_token']
 
-# 🆕 REGISTRO DA FUNÇÃO NO AMBIENTE JINJA2 (CORREÇÃO)
 app.jinja_env.globals['csrf_token'] = generate_csrf_token
 
 def validate_csrf_token(token):
@@ -351,6 +350,14 @@ def editar_cliente(id):
         flash(f'Cliente {cliente.codigo} atualizado!', 'success')
         return redirect(url_for('listar_clientes'))
     return render_template('editar_cliente.html', cliente=cliente)
+
+# --- 🆕 NOVA ROTA: LISTAR PARCELAS DE UM CLIENTE ESPECÍFICO ---
+@app.route('/cliente/<int:id>/parcelas')
+@login_required
+def parcelas_cliente(id):
+    cliente = Cliente.query.get_or_404(id)
+    parcelas = Parcela.query.filter_by(cliente_id=id).order_by(Parcela.numero).all()
+    return render_template('parcelas_cliente.html', cliente=cliente, parcelas=parcelas)
 
 # --- ROTA PARA MARCAR PARCELA COMO PAGA (PROTEGIDA COM POST E CSRF) ---
 @app.route('/parcela/pagar/<int:id>', methods=['POST'])
