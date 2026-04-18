@@ -407,7 +407,6 @@ def parcelas_cliente(id):
     parcelas = Parcela.query.filter_by(cliente_id=id).order_by(Parcela.numero).all()
     return render_template('parcelas_cliente.html', cliente=cliente, parcelas=parcelas)
 
-# 🆕 ROTA PARA EXCLUIR CLIENTE (PROTEGIDA COM POST E CSRF)
 @app.route('/cliente/excluir/<int:id>', methods=['POST'])
 @login_required
 def excluir_cliente(id):
