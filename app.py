@@ -488,7 +488,7 @@ with app.app_context():
     db.drop_all()      # ⚠️ APAGA TODO O BANCO E RECRIA
     db.create_all()
     if not Usuario.query.filter_by(username='admin').first():
-        admin = Usuario(username='admin', telefone='5585989034395')  # substitua pelo seu número
+        admin = Usuario(username='admin', telefone='5585986121078')  # 🟢 NÚMERO CORRETO
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
