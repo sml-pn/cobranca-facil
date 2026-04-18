@@ -1,5 +1,7 @@
 import os
 import time
+import random
+import requests
 from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
@@ -58,6 +60,7 @@ class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    telefone = db.Column(db.String(20), nullable=False, default='')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -159,7 +162,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- GERAÇÃO DE TOKEN CSRF SIMPLES ---
+# --- GERAÇÃO DE TOKEN CSRF ---
 def generate_csrf_token():
     if '_csrf_token' not in session:
         session['_csrf_token'] = secrets.token_hex(16)
@@ -169,6 +172,25 @@ app.jinja_env.globals['csrf_token'] = generate_csrf_token
 
 def validate_csrf_token(token):
     return token == session.get('_csrf_token')
+
+# --- FUNÇÕES OTP ---
+def gerar_codigo_otp():
+    return str(random.randint(100000, 999999))
+
+def enviar_whatsapp_otp(numero, codigo):
+    api_key = os.environ.get('CALLMEBOT_API_KEY')
+    seu_numero = os.environ.get('CALLMEBOT_PHONE_NUMBER')
+    if not api_key or not seu_numero:
+        print("❌ CallMeBot não configurado.")
+        return False
+    mensagem = f"🔐 Seu código de recuperação do Cobrança Fácil é: {codigo}\n\nVálido por 10 minutos."
+    mensagem_codificada = quote(mensagem)
+    url = f"https://api.callmebot.com/whatsapp.php?phone={seu_numero}&text={mensagem_codificada}&apikey={api_key}"
+    try:
+        requests.get(url, timeout=10)
+        return True
+    except:
+        return False
 
 # --- ROTAS DE AUTENTICAÇÃO ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -195,30 +217,58 @@ def logout():
 def esqueci_senha():
     if request.method == 'POST':
         telefone = request.form['telefone'].replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
-        username = 'admin'
-        token = serializer.dumps(username, salt='password-reset')
-        reset_url = url_for('redefinir_senha', token=token, _external=True)
-        return render_template('esqueci_senha.html', reset_url=reset_url, success=True)
+        user = Usuario.query.filter_by(telefone=telefone).first()
+        if user:
+            codigo = gerar_codigo_otp()
+            session['reset_username'] = user.username
+            session['reset_codigo'] = codigo
+            session['reset_expira'] = time.time() + 600  # 10 minutos
+            session['reset_tentativas'] = 0
+            enviar_whatsapp_otp(telefone, codigo)
+        flash('Se o número estiver cadastrado, você receberá um código por WhatsApp.', 'info')
+        return redirect(url_for('validar_codigo'))
     return render_template('esqueci_senha.html')
 
-@app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
-def redefinir_senha(token):
-    try:
-        username = serializer.loads(token, salt='password-reset', max_age=3600)
-    except:
-        flash('O link de recuperação é inválido ou expirou.', 'danger')
-        return redirect(url_for('esqueci_senha'))
+@app.route('/validar-codigo', methods=['GET', 'POST'])
+def validar_codigo():
+    if request.method == 'POST':
+        codigo = request.form['codigo']
+        if session.get('reset_tentativas', 0) >= 3:
+            flash('Número máximo de tentativas excedido. Solicite um novo código.', 'danger')
+            return redirect(url_for('esqueci_senha'))
+        if time.time() > session.get('reset_expira', 0):
+            flash('Código expirado. Solicite um novo.', 'warning')
+            return redirect(url_for('esqueci_senha'))
+        if codigo == session.get('reset_codigo'):
+            session['reset_autenticado'] = True
+            return redirect(url_for('redefinir_senha_otp'))
+        else:
+            session['reset_tentativas'] = session.get('reset_tentativas', 0) + 1
+            flash(f'Código incorreto. Tentativa {session["reset_tentativas"]} de 3.', 'danger')
+            return render_template('validar_codigo.html')
+    return render_template('validar_codigo.html')
+
+@app.route('/redefinir-senha-otp', methods=['GET', 'POST'])
+def redefinir_senha_otp():
+    if not session.get('reset_autenticado'):
+        flash('Acesso não autorizado.', 'danger')
+        return redirect(url_for('login'))
     if request.method == 'POST':
         nova_senha = request.form['senha']
+        username = session.get('reset_username')
         user = Usuario.query.filter_by(username=username).first()
         if user:
             user.set_password(nova_senha)
             db.session.commit()
+            # Limpa sessão
+            session.pop('reset_username', None)
+            session.pop('reset_codigo', None)
+            session.pop('reset_expira', None)
+            session.pop('reset_tentativas', None)
+            session.pop('reset_autenticado', None)
             flash('Senha redefinida com sucesso! Faça login.', 'success')
             return redirect(url_for('login'))
-        else:
-            flash('Usuário não encontrado.', 'danger')
-    return render_template('redefinir_senha.html', token=token)
+    return render_template('redefinir_senha_otp.html')
 
 # --- ROTA DE CONFIGURAÇÕES (PIX) ---
 @app.route('/configuracoes', methods=['GET', 'POST'])
@@ -371,7 +421,7 @@ def pagar_parcela(id):
     flash(f'Parcela {parcela.numero}/{parcela.cliente.quantidade_parcelas} de {parcela.cliente.nome} paga!', 'success')
     return redirect(url_for('index'))
 
-# --- API PARA NOTIFICAÇÕES (CONSULTADA PELO SERVICE WORKER) ---
+# --- API PARA NOTIFICAÇÕES ---
 @app.route('/api/notificacoes')
 def api_notificacoes():
     hoje = hoje_sp()
@@ -437,7 +487,7 @@ atexit.register(lambda: scheduler.shutdown())
 with app.app_context():
     db.create_all()
     if not Usuario.query.filter_by(username='admin').first():
-        admin = Usuario(username='admin')
+        admin = Usuario(username='admin', telefone='5585989034395')  # substitua pelo seu número
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
