@@ -336,7 +336,8 @@
             let statusClasse = 'status-normal', statusTexto = `${dias} dias`;
             if (p.data_vencimento < hoje) {
                 statusClasse = 'status-vencida';
-                statusTexto = `Atrasada ${Math.abs(dias)}d`;
+                const diasAtraso = Math.ceil((hojeDate - venc) / 86400000);
+                statusTexto = `Atrasada ${diasAtraso}d`;
             } else if (dias === 0) {
                 statusClasse = 'status-hoje';
                 statusTexto = 'Vence HOJE';
@@ -345,8 +346,23 @@
                 statusTexto = 'Amanhã';
             }
 
-            let msgWhats = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence em ${dias} dias (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
-            if (p.data_vencimento < hoje) msgWhats = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
+            let textoDias = '';
+            if (p.data_vencimento < hoje) {
+                const diasAtraso = Math.ceil((hojeDate - venc) / 86400000);
+                textoDias = `há ${diasAtraso} dias`;
+            } else if (dias === 0) {
+                textoDias = 'hoje';
+            } else if (dias === 1) {
+                textoDias = 'amanhã';
+            } else {
+                textoDias = `em ${dias} dias`;
+            }
+
+            let msgWhats = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence ${textoDias} (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
+            if (p.data_vencimento < hoje) {
+                const diasAtraso = Math.ceil((hojeDate - venc) / 86400000);
+                msgWhats = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu há ${diasAtraso} dias (${p.data_vencimento.split('-').reverse().join('/')}) e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
+            }
 
             html += `
                 <div class="cliente-card">
