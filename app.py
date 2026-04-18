@@ -485,7 +485,6 @@ atexit.register(lambda: scheduler.shutdown())
 
 # --- CRIAÇÃO DAS TABELAS E USUÁRIO PADRÃO (COM RESET TEMPORÁRIO) ---
 with app.app_context():
-    db.drop_all()      # ⚠️ APAGA TODO O BANCO E RECRIA
     db.create_all()
     if not Usuario.query.filter_by(username='admin').first():
         admin = Usuario(username='admin', telefone='5585986121078')  # 🟢 NÚMERO CORRETO
