@@ -407,6 +407,19 @@ def parcelas_cliente(id):
     parcelas = Parcela.query.filter_by(cliente_id=id).order_by(Parcela.numero).all()
     return render_template('parcelas_cliente.html', cliente=cliente, parcelas=parcelas)
 
+# 🆕 ROTA PARA EXCLUIR CLIENTE (PROTEGIDA COM POST E CSRF)
+@app.route('/cliente/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_cliente(id):
+    token = request.form.get('_csrf_token')
+    if not validate_csrf_token(token):
+        abort(403, 'Token CSRF inválido')
+    cliente = Cliente.query.get_or_404(id)
+    db.session.delete(cliente)
+    db.session.commit()
+    flash(f'Cliente {cliente.nome} e todas as suas parcelas foram excluídos.', 'success')
+    return redirect(url_for('listar_clientes'))
+
 # --- ROTA PARA MARCAR PARCELA COMO PAGA (PROTEGIDA COM POST E CSRF) ---
 @app.route('/parcela/pagar/<int:id>', methods=['POST'])
 @login_required
@@ -483,15 +496,15 @@ scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
-# --- CRIAÇÃO DAS TABELAS E USUÁRIO PADRÃO (COM RESET TEMPORÁRIO) ---
+# --- CRIAÇÃO DAS TABELAS E USUÁRIO PADRÃO ---
 with app.app_context():
     db.create_all()
     if not Usuario.query.filter_by(username='admin').first():
-        admin = Usuario(username='admin', telefone='5585986121078')  # 🟢 NÚMERO CORRETO
+        admin = Usuario(username='admin', telefone='5585986121078')
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
-        print("✅ Banco recriado e usuário 'admin' configurado.")
+        print("✅ Usuário 'admin' criado com senha 'admin123'")
     if not Configuracao.query.first():
         config = Configuracao(tipo_chave='telefone', chave_pix='', nome_titular='', banco='')
         db.session.add(config)

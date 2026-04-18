@@ -42,6 +42,13 @@
                             <a href="{{ url_for('parcelas_cliente', id=c.id) }}" class="btn btn-outline" style="padding: 0.3rem 0.8rem; background: #1e3c72; color: white; border: none;">
                                 <i class="fas fa-list"></i> Parcelas
                             </a>
+                            <!-- 🆕 Botão Excluir -->
+                            <form method="POST" action="{{ url_for('excluir_cliente', id=c.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir este cliente e todas as suas parcelas? Esta ação não pode ser desfeita.');">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline" style="padding: 0.3rem 0.8rem; background: #dc3545; color: white; border: none;">
+                                    <i class="fas fa-trash"></i> Excluir
+                                </button>
+                            </form>
                         </div>
                     </td>
                 </tr>
