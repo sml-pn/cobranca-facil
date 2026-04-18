@@ -1,6 +1,6 @@
 import os
 import time
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -9,14 +9,15 @@ from sqlalchemy import func
 import atexit
 import calendar
 import pytz
-import requests
-from urllib.parse import quote
 import hashlib
 from functools import wraps
 from itsdangerous import URLSafeTimedSerializer
+from urllib.parse import quote
+from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'sua-chave-secreta-aqui-mude-para-algo-seguro')
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 # --- BANCO DE DADOS ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -45,7 +46,7 @@ db = SQLAlchemy(app)
 
 serializer = URLSafeTimedSerializer(app.secret_key)
 
-# --- FILTRO PARA FORMATAR MOEDA ---
+# --- FILTRO PARA FORMATAR MOEDA (R$ 1.000,00) ---
 @app.template_filter('real')
 def format_real(value):
     if value is None:
@@ -56,7 +57,13 @@ def format_real(value):
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash = db.Column(db.String(64), nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 class Configuracao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -142,45 +149,6 @@ def get_proximas_parcelas(filtro_data=None):
 
     return query.order_by(Parcela.data_vencimento).all()
 
-# --- FUNÇÃO PARA OBTER DADOS PIX (formatação) ---
-def get_dados_pix():
-    config = Configuracao.query.first()
-    if not config or not config.chave_pix:
-        return ""
-    return (
-        f"\n\n📌 Dados para pagamento (PIX):\n"
-        f"Chave: {config.chave_pix}\n"
-        f"Titular: {config.nome_titular}\n"
-        f"Banco: {config.banco}"
-    )
-
-# --- FUNÇÃO DE ENVIO DE WHATSAPP (COM CORREÇÃO DO FORMATO DO NÚMERO) ---
-def enviar_whatsapp_direto(numero_destino, mensagem):
-    """Envia uma mensagem de WhatsApp via CallMeBot."""
-    api_key = os.environ.get('CALLMEBOT_API_KEY')
-    if not api_key:
-        print("❌ Erro: Chave API do CallMeBot não configurada.")
-        return False
-
-    # Limpa o número: remove tudo que não for dígito
-    numero_limpo = ''.join(filter(str.isdigit, numero_destino))
-    
-    # Se o número não começar com '55', adiciona
-    if not numero_limpo.startswith('55'):
-        numero_limpo = '55' + numero_limpo
-    
-    print(f"📱 Enviando WhatsApp para: {numero_limpo}")
-    
-    mensagem_codificada = quote(mensagem)
-    url = f"https://api.callmebot.com/whatsapp.php?phone={numero_limpo}&text={mensagem_codificada}&apikey={api_key}"
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        return True
-    except Exception as e:
-        print(f"❌ Erro ao enviar WhatsApp: {e}")
-        return False
-
 # --- DECORATOR DE AUTENTICAÇÃO ---
 def login_required(f):
     @wraps(f)
@@ -191,15 +159,26 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# --- GERAÇÃO DE TOKEN CSRF SIMPLES ---
+def generate_csrf_token():
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = secrets.token_hex(16)
+    return session['_csrf_token']
+
+# 🆕 REGISTRO DA FUNÇÃO NO AMBIENTE JINJA2 (CORREÇÃO)
+app.jinja_env.globals['csrf_token'] = generate_csrf_token
+
+def validate_csrf_token(token):
+    return token == session.get('_csrf_token')
+
 # --- ROTAS DE AUTENTICAÇÃO ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['usuario']
         senha = request.form['senha']
-        senha_hash = hashlib.sha256(senha.encode()).hexdigest()
-        user = Usuario.query.filter_by(username=username, password_hash=senha_hash).first()
-        if user:
+        user = Usuario.query.filter_by(username=username).first()
+        if user and user.check_password(senha):
             session['usuario'] = username
             flash('Login realizado com sucesso!', 'success')
             return redirect(url_for('index'))
@@ -220,24 +199,7 @@ def esqueci_senha():
         username = 'admin'
         token = serializer.dumps(username, salt='password-reset')
         reset_url = url_for('redefinir_senha', token=token, _external=True)
-        mensagem = (
-            f"🔐 Recuperação de Senha - Cobrança Fácil\n\n"
-            f"Clique no link abaixo para redefinir sua senha (válido por 1 hora):\n"
-            f"{reset_url}\n\n"
-            f"Se você não solicitou, ignore esta mensagem."
-        )
-        mensagem_codificada = quote(mensagem)
-        api_key = os.environ.get('CALLMEBOT_API_KEY')
-        seu_numero = os.environ.get('CALLMEBOT_PHONE_NUMBER')
-        if api_key and seu_numero:
-            url = f"https://api.callmebot.com/whatsapp.php?phone={seu_numero}&text={mensagem_codificada}&apikey={api_key}"
-            try:
-                requests.get(url, timeout=10)
-                flash('Um link de recuperação foi enviado para o WhatsApp cadastrado.', 'success')
-            except:
-                flash('Erro ao enviar mensagem. Tente novamente.', 'danger')
-        else:
-            flash(f'Link de recuperação: {reset_url}', 'warning')
+        flash(f'Link de recuperação gerado. Acesse: {reset_url}', 'info')
         return redirect(url_for('login'))
     return render_template('esqueci_senha.html')
 
@@ -250,10 +212,9 @@ def redefinir_senha(token):
         return redirect(url_for('esqueci_senha'))
     if request.method == 'POST':
         nova_senha = request.form['senha']
-        senha_hash = hashlib.sha256(nova_senha.encode()).hexdigest()
         user = Usuario.query.filter_by(username=username).first()
         if user:
-            user.password_hash = senha_hash
+            user.set_password(nova_senha)
             db.session.commit()
             flash('Senha redefinida com sucesso! Faça login.', 'success')
             return redirect(url_for('login'))
@@ -391,9 +352,13 @@ def editar_cliente(id):
         return redirect(url_for('listar_clientes'))
     return render_template('editar_cliente.html', cliente=cliente)
 
-@app.route('/parcela/pagar/<int:id>')
+# --- ROTA PARA MARCAR PARCELA COMO PAGA (PROTEGIDA COM POST E CSRF) ---
+@app.route('/parcela/pagar/<int:id>', methods=['POST'])
 @login_required
 def pagar_parcela(id):
+    token = request.form.get('_csrf_token')
+    if not validate_csrf_token(token):
+        abort(403, 'Token CSRF inválido')
     parcela = Parcela.query.get_or_404(id)
     parcela.pago = True
     parcela.data_pagamento = agora_sp()
@@ -401,137 +366,74 @@ def pagar_parcela(id):
     flash(f'Parcela {parcela.numero}/{parcela.cliente.quantidade_parcelas} de {parcela.cliente.nome} paga!', 'success')
     return redirect(url_for('index'))
 
-@app.route('/api/lembretes')
-@login_required
-def api_lembretes():
+# --- API PARA NOTIFICAÇÕES (CONSULTADA PELO SERVICE WORKER) ---
+@app.route('/api/notificacoes')
+def api_notificacoes():
     hoje = hoje_sp()
-    limite = hoje + timedelta(days=5)
-    parcelas = Parcela.query.filter(
-        Parcela.data_vencimento.between(hoje, limite),
-        Parcela.pago == False
-    ).all()
-    resultado = []
-    for p in parcelas:
-        resultado.append({
-            'cliente': p.cliente.nome,
-            'carro': p.cliente.carro,
-            'parcela': f"{p.numero}/{p.cliente.quantidade_parcelas}",
-            'valor': f"R$ {p.valor:.2f}",
-            'dias': (p.data_vencimento - hoje).days,
-            'telefone': p.cliente.telefone
-        })
-    return {'lembretes': resultado}
+    alvo_5 = hoje + timedelta(days=5)
+    alvo_1 = hoje + timedelta(days=1)
+    alvo_0 = hoje
+    alvo_atraso = hoje - timedelta(days=1)
 
-@app.route('/api/todas-parcelas')
-@login_required
-def api_todas_parcelas():
-    parcelas = get_proximas_parcelas()
-    resultado = []
-    for p in parcelas:
-        resultado.append({
+    parcelas_5 = Parcela.query.filter(Parcela.data_vencimento == alvo_5, Parcela.pago == False).all()
+    parcelas_1 = Parcela.query.filter(Parcela.data_vencimento == alvo_1, Parcela.pago == False).all()
+    parcelas_0 = Parcela.query.filter(Parcela.data_vencimento == alvo_0, Parcela.pago == False).all()
+    parcelas_atraso = Parcela.query.filter(Parcela.data_vencimento <= alvo_atraso, Parcela.pago == False).all()
+
+    notificacoes = []
+
+    def formatar(p, dias_texto):
+        cliente = p.cliente
+        tel_limpo = ''.join(filter(str.isdigit, cliente.telefone))
+        if not tel_limpo.startswith('55'):
+            tel_limpo = '55' + tel_limpo
+        msg_whats = (
+            f"Olá {cliente.nome}, a parcela {p.numero}/{cliente.quantidade_parcelas} "
+            f"do contrato {cliente.carro} vence {dias_texto}. Valor: R$ {p.valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
+        return {
             'id': p.id,
-            'numero': p.numero,
-            'valor': p.valor,
-            'data_vencimento': p.data_vencimento.isoformat(),
-            'cliente': {
-                'id': p.cliente.id,
-                'nome': p.cliente.nome,
-                'telefone': p.cliente.telefone,
-                'carro': p.cliente.carro,
-                'quantidade_parcelas': p.cliente.quantidade_parcelas
-            }
-        })
-    return {'parcelas': resultado}
+            'titulo': f'🔔 {cliente.nome} - {dias_texto}',
+            'mensagem': msg_whats,
+            'url': f'https://wa.me/{tel_limpo}?text={quote(msg_whats)}',
+            'acao_pagar': f'/parcela/pagar/{p.id}'
+        }
 
-# --- VERIFICAÇÃO DIÁRIA COM MÚLTIPLOS LEMBRETES E DADOS PIX (COM CORREÇÃO DE NÚMERO) ---
+    for p in parcelas_5:
+        notificacoes.append(formatar(p, 'em 5 dias'))
+    for p in parcelas_1:
+        notificacoes.append(formatar(p, 'amanhã'))
+    for p in parcelas_0:
+        notificacoes.append(formatar(p, 'hoje'))
+    for p in parcelas_atraso:
+        dias_atraso = (hoje - p.data_vencimento).days
+        notificacoes.append(formatar(p, f'vencida há {dias_atraso} dias'))
+
+    return {'notificacoes': notificacoes}
+
+# --- VERIFICAÇÃO DIÁRIA (APENAS LOG) ---
 def verificar_lembretes():
     with app.app_context():
-        print("\n🚀 Agendador acionado! Iniciando verificação de lembretes...")
-        max_tentativas = 3
-        for tentativa in range(max_tentativas):
-            try:
-                hoje = hoje_sp()
-                dados_pix = get_dados_pix()
-                
-                # 5 dias
-                alvo_5dias = hoje + timedelta(days=5)
-                parcelas_5dias = Parcela.query.filter(
-                    Parcela.data_vencimento == alvo_5dias,
-                    Parcela.pago == False
-                ).all()
-                
-                # amanhã
-                alvo_amanha = hoje + timedelta(days=1)
-                parcelas_amanha = Parcela.query.filter(
-                    Parcela.data_vencimento == alvo_amanha,
-                    Parcela.pago == False
-                ).all()
-                
-                # hoje
-                parcelas_hoje = Parcela.query.filter(
-                    Parcela.data_vencimento == hoje,
-                    Parcela.pago == False
-                ).all()
-                
-                total_envios = 0
-                
-                for p in parcelas_5dias:
-                    cliente = p.cliente
-                    tel = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
-                    msg = (f"Olá {cliente.nome}, tudo bem?\n\n"
-                           f"Passando para lembrar que a parcela {p.numero}/{cliente.quantidade_parcelas} do seu contrato ({cliente.carro}) "
-                           f"vence em 5 dias, no dia {p.data_vencimento.strftime('%d/%m/%Y')}.\n"
-                           f"💵 Valor: R$ {p.valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") +
-                           f"{dados_pix}\n\n"
-                           f"Se já tiver efetuado o pagamento, desconsidere esta mensagem.")
-                    enviar_whatsapp_direto(tel, msg)
-                    total_envios += 1
-                
-                for p in parcelas_amanha:
-                    cliente = p.cliente
-                    tel = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
-                    msg = (f"Olá {cliente.nome}, tudo bem?\n\n"
-                           f"⚠️ Lembrete importante: a parcela {p.numero}/{cliente.quantidade_parcelas} do seu contrato ({cliente.carro}) "
-                           f"vence AMANHÃ, dia {p.data_vencimento.strftime('%d/%m/%Y')}.\n"
-                           f"💵 Valor: R$ {p.valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") +
-                           f"{dados_pix}\n\n"
-                           f"Não deixe para a última hora!")
-                    enviar_whatsapp_direto(tel, msg)
-                    total_envios += 1
-                
-                for p in parcelas_hoje:
-                    cliente = p.cliente
-                    tel = cliente.telefone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')
-                    msg = (f"Olá {cliente.nome}, tudo bem?\n\n"
-                           f"🔴 A parcela {p.numero}/{cliente.quantidade_parcelas} do seu contrato ({cliente.carro}) "
-                           f"vence HOJE, dia {p.data_vencimento.strftime('%d/%m/%Y')}.\n"
-                           f"💵 Valor: R$ {p.valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") +
-                           f"{dados_pix}\n\n"
-                           f"Por favor, efetue o pagamento. Após, envie o comprovante.")
-                    enviar_whatsapp_direto(tel, msg)
-                    total_envios += 1
-                
-                print(f"===== {total_envios} LEMBRETES GERADOS =====\n")
-                break
-            except Exception as e:
-                print(f"Tentativa {tentativa + 1} falhou: {e}")
-                if tentativa == max_tentativas - 1:
-                    print("❌ Todas as tentativas de conexão com o banco falharam.")
-                else:
-                    time.sleep(5)
+        hoje = hoje_sp()
+        alvo_5 = hoje + timedelta(days=5)
+        alvo_1 = hoje + timedelta(days=1)
+        total = 0
+        total += Parcela.query.filter(Parcela.data_vencimento == alvo_5, Parcela.pago == False).count()
+        total += Parcela.query.filter(Parcela.data_vencimento == alvo_1, Parcela.pago == False).count()
+        total += Parcela.query.filter(Parcela.data_vencimento == hoje, Parcela.pago == False).count()
+        print(f"===== {total} LEMBRETES IDENTIFICADOS =====")
 
-# 🕒 AGENDADOR AJUSTADO PARA 10:10 UTC (TESTE)
 scheduler = BackgroundScheduler(timezone='UTC')
-scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=10, minute=10))
+scheduler.add_job(func=verificar_lembretes, trigger=CronTrigger(hour=8, minute=0))
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
-# --- CRIAÇÃO DAS TABELAS E DADOS INICIAIS ---
+# --- CRIAÇÃO DAS TABELAS E USUÁRIO PADRÃO ---
 with app.app_context():
     db.create_all()
     if not Usuario.query.filter_by(username='admin').first():
-        senha_padrao = hashlib.sha256('admin123'.encode()).hexdigest()
-        admin = Usuario(username='admin', password_hash=senha_padrao)
+        admin = Usuario(username='admin')
+        admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
         print("✅ Usuário 'admin' criado com senha 'admin123'")
