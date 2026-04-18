@@ -5,22 +5,22 @@
 {% block content %}
 <!-- KPIs Grid -->
 <div class="kpi-grid">
-    <div class="kpi-card filter-chip-card" data-filter="vencidas" style="background: linear-gradient(135deg, #dc3545, #8b1e1e);">
+    <div class="kpi-card filter-chip-card" data-filter="vencidas" style="background: linear-gradient(135deg, #dc3545, #c82333);">
         <i class="fas fa-exclamation-circle"></i>
         <h3>{{ count_vencidas }}</h3>
         <p>Vencidas</p>
     </div>
-    <div class="kpi-card filter-chip-card" data-filter="hoje" style="background: linear-gradient(135deg, #fd7e14, #c05e00);">
+    <div class="kpi-card filter-chip-card" data-filter="hoje" style="background: linear-gradient(135deg, #fd7e14, #e66a00);">
         <i class="fas fa-bell"></i>
         <h3>{{ count_hoje }}</h3>
         <p>Vence HOJE</p>
     </div>
-    <div class="kpi-card filter-chip-card" data-filter="semana" style="background: linear-gradient(135deg, #ffc107, #d4a000); color: #1e293b;">
+    <div class="kpi-card filter-chip-card" data-filter="semana" style="background: linear-gradient(135deg, #ffc107, #e0a800); color: #1e293b;">
         <i class="fas fa-calendar-alt"></i>
         <h3>{{ count_semana }}</h3>
         <p>Esta Semana</p>
     </div>
-    <div class="kpi-card filter-chip-card" data-filter="todas" style="background: linear-gradient(135deg, #28a745, #1e7a34);">
+    <div class="kpi-card filter-chip-card" data-filter="todas" style="background: linear-gradient(135deg, #28a745, #218838);">
         <i class="fas fa-hand-holding-usd"></i>
         <h3>{{ total_receber|real }}</h3>
         <p>Total a Receber</p>
@@ -55,19 +55,7 @@
     </button>
 </div>
 
-<!-- Botão de ajuda (instalação PWA) -->
-<div id="installHelpButton" class="install-help-btn">
-    <button onclick="showInstallGuide()">
-        <i class="fas fa-download"></i> Instalar App
-    </button>
-</div>
-
 <style>
-    /* ===== RESET ===== */
-    * { box-sizing: border-box; }
-    body, .main-content { max-width: 100%; overflow-x: hidden; }
-
-    /* ===== KPIs ===== */
     .kpi-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -92,7 +80,6 @@
     .kpi-card p { margin: 0; font-size: 0.9rem; opacity: 0.95; }
     .kpi-card.active { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
 
-    /* ===== FILTROS ===== */
     .filter-section {
         display: flex;
         flex-wrap: wrap;
@@ -140,7 +127,6 @@
         outline: none;
     }
 
-    /* ===== CARDS GRID ===== */
     .cards-grid {
         display: grid;
         grid-template-columns: 1fr;
@@ -153,7 +139,6 @@
         .cards-grid { grid-template-columns: repeat(3, 1fr); }
     }
 
-    /* Card individual */
     .cliente-card {
         background: white;
         border-radius: 24px;
@@ -260,7 +245,6 @@
         border: none;
     }
 
-    /* Botões auxiliares */
     .btn-load-more {
         background: white;
         border: 1.5px solid #2a5298;
@@ -277,27 +261,6 @@
         color: white;
     }
 
-    .install-help-btn {
-        position: fixed;
-        bottom: 25px;
-        left: 25px;
-        z-index: 1000;
-    }
-    .install-help-btn button {
-        background: #1e3c72;
-        color: white;
-        border: none;
-        padding: 12px 22px;
-        border-radius: 60px;
-        font-weight: bold;
-        box-shadow: 0 8px 18px rgba(0,0,0,0.2);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    /* Responsividade extra */
     @media (max-width: 480px) {
         .card-actions { flex-direction: column; }
         .btn-card { padding: 14px; }
@@ -315,23 +278,11 @@
     let filtroAtual = 'todas';
     let parcelasFiltradas = [];
     let paginaAtual = 1;
-    const ITENS_POR_PAGINA = 9;  // Múltiplo de 3 para grid bonito
+    const ITENS_POR_PAGINA = 9;
     const container = document.getElementById('cardsContainer');
     const loadMoreContainer = document.getElementById('loadMoreContainer');
     const ordenacaoSelect = document.getElementById('ordenacao');
 
-    // Botão de instalação
-    const installBtn = document.getElementById('installHelpButton');
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) installBtn.style.display = 'block';
-    else installBtn.style.display = 'none';
-    window.showInstallGuide = function() {
-        let msg = /iPhone|iPad|iPod/i.test(navigator.userAgent) ?
-            "📱 iPhone/iPad:\n1. Toque em Compartilhar (quadrado com seta)\n2. Role e toque em 'Adicionar à Tela de Início'\n3. Confirme." :
-            "📱 Android:\n1. Toque no menu (3 pontinhos) do Chrome\n2. 'Instalar aplicativo' ou 'Adicionar à tela inicial'.";
-        alert(msg);
-    };
-
-    // Carrega todas as parcelas
     async function carregarTodasParcelas() {
         try {
             const resp = await fetch('/api/todas-parcelas');
@@ -394,7 +345,7 @@
                 statusTexto = 'Amanhã';
             }
 
-            let msgWhats = `Olá ${p.cliente.nome}, lembrete da próxima parcela (${p.numero}/${p.cliente.quantidade_parcelas}) do contrato ${p.cliente.carro}. Vencimento: ${p.data_vencimento.split('-').reverse().join('/')}. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
+            let msgWhats = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} vence em ${dias} dias (${p.data_vencimento.split('-').reverse().join('/')}). Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}.`;
             if (p.data_vencimento < hoje) msgWhats = `Olá ${p.cliente.nome}, a parcela ${p.numero}/${p.cliente.quantidade_parcelas} do contrato ${p.cliente.carro} venceu em ${p.data_vencimento.split('-').reverse().join('/')} e está em atraso. Valor: R$ ${p.valor.toFixed(2).replace('.', ',')}. Regularize o pagamento.`;
 
             html += `
@@ -408,13 +359,16 @@
                     </div>
                     <div class="card-detalhes">
                         <div class="detalhe-item"><i class="fas fa-calendar"></i> Venc: ${p.data_vencimento.split('-').reverse().join('/')}</div>
-                        <div class="detalhe-item"><i class="fas fa-money-bill"></i> ${p.valor.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</div>
+                        <div class="detalhe-item"><i class="fas fa-money-bill"></i> R$ ${p.valor.toFixed(2).replace('.', ',')}</div>
                         <div class="detalhe-item"><i class="fas fa-phone"></i> ${p.cliente.telefone}</div>
                     </div>
                     <span class="status-card ${statusClasse}"><i class="fas fa-hourglass-half"></i> ${statusTexto}</span>
                     <div class="card-actions">
-                        <a href="/parcela/pagar/${p.id}" class="btn-card btn-card-pagar" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i> Pagar</a>
-                        <a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g,'')}?text=${encodeURIComponent(msgWhats)}" target="_blank" class="btn-card btn-card-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+                        <form method="POST" action="/parcela/pagar/${p.id}" style="flex:1; display:flex;" onsubmit="return confirm('Confirmar pagamento?')">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-card btn-card-pagar"><i class="fas fa-check"></i> Pagar</button>
+                        </form>
+                        <a href="https://wa.me/55${p.cliente.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(msgWhats)}" target="_blank" class="btn-card btn-card-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
                     </div>
                 </div>
             `;
@@ -435,7 +389,6 @@
         atualizarListaFiltrada();
     }
 
-    // Eventos
     document.querySelectorAll('.filter-chip').forEach(c => c.addEventListener('click', e => aplicarFiltro(e.target.dataset.filter)));
     document.querySelectorAll('.kpi-card').forEach(c => c.addEventListener('click', e => aplicarFiltro(e.currentTarget.dataset.filter)));
     ordenacaoSelect.addEventListener('change', atualizarListaFiltrada);
