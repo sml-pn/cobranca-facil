@@ -10,7 +10,7 @@
     <form method="POST">
         <div class="form-group">
             <label for="tipo_chave">Tipo de chave</label>
-            <select name="tipo_chave" id="tipo_chave" class="form-control">
+            <select name="tipo_chave" id="tipo_chave" class="form-control" onchange="aplicarMascara()">
                 <option value="telefone" {% if config.tipo_chave == 'telefone' %}selected{% endif %}>Telefone</option>
                 <option value="cpf" {% if config.tipo_chave == 'cpf' %}selected{% endif %}>CPF</option>
                 <option value="cnpj" {% if config.tipo_chave == 'cnpj' %}selected{% endif %}>CNPJ</option>
@@ -35,4 +35,37 @@
         </div>
     </form>
 </div>
+
+<script>
+    function aplicarMascara() {
+        const tipo = document.getElementById('tipo_chave').value;
+        const inputChave = document.getElementById('chave_pix');
+        // Remove máscara antiga e eventos
+        inputChave.value = inputChave.value.replace(/\D/g, '');
+        
+        if (tipo === 'cpf') {
+            VMasker(inputChave).maskPattern('999.999.999-99');
+        } else if (tipo === 'cnpj') {
+            VMasker(inputChave).maskPattern('99.999.999/9999-99');
+        } else if (tipo === 'telefone') {
+            VMasker(inputChave).maskPattern('(99) 99999-9999');
+        } else {
+            // Email ou aleatória: sem máscara
+            inputChave.placeholder = tipo === 'email' ? 'exemplo@dominio.com' : 'Chave aleatória';
+        }
+    }
+
+    // Aplica máscara inicial
+    window.addEventListener('DOMContentLoaded', () => {
+        // Inclui a biblioteca VMasker se ainda não estiver
+        if (typeof VMasker === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/vanilla-masker@1.2.0/build/vanilla-masker.min.js';
+            script.onload = () => aplicarMascara();
+            document.head.appendChild(script);
+        } else {
+            aplicarMascara();
+        }
+    });
+</script>
 {% endblock %}
