@@ -15,21 +15,56 @@
         .flash.success { background: #d1fae5; color: #065f46; }
         .flash.danger { background: #fee2e2; color: #b91c1c; }
         a { color: #2a5298; text-decoration: none; }
+        .reset-link-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .btn-link {
+            display: inline-block;
+            background: #1e3c72;
+            color: white !important;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="card">
         <h3><i class="fas fa-key"></i> Recuperar Senha</h3>
+        
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% for category, message in messages %}
                 <div class="flash {{ category }}">{{ message }}</div>
             {% endfor %}
         {% endwith %}
-        <form method="POST">
-            <label>Número do WhatsApp cadastrado</label>
-            <input type="tel" name="telefone" placeholder="(85) 99999-9999" required>
-            <button type="submit">Enviar link de recuperação</button>
-        </form>
+        
+        {% if reset_url %}
+            <div class="reset-link-box">
+                <p><i class="fas fa-check-circle" style="color: #28a745;"></i> Link gerado com sucesso!</p>
+                <p>Clique no botão abaixo para redefinir sua senha:</p>
+                <a href="{{ reset_url }}" class="btn-link" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Acessar página de redefinição
+                </a>
+                <p style="margin-top: 15px; font-size: 0.85rem; color: #64748b;">
+                    O link é válido por 1 hora. Se preferir, copie o endereço abaixo:<br>
+                    <code style="word-break: break-all;">{{ reset_url }}</code>
+                </p>
+            </div>
+        {% else %}
+            <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <label>Número do WhatsApp cadastrado</label>
+                <input type="tel" name="telefone" placeholder="(85) 99999-9999" required>
+                <button type="submit">Gerar link de recuperação</button>
+            </form>
+        {% endif %}
+        
         <p style="text-align: center; margin-top: 20px;"><a href="{{ url_for('login') }}">← Voltar para o login</a></p>
     </div>
 </body>

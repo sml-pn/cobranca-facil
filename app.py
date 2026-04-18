@@ -198,8 +198,7 @@ def esqueci_senha():
         username = 'admin'
         token = serializer.dumps(username, salt='password-reset')
         reset_url = url_for('redefinir_senha', token=token, _external=True)
-        flash(f'Link de recuperação gerado. Acesse: {reset_url}', 'info')
-        return redirect(url_for('login'))
+        return render_template('esqueci_senha.html', reset_url=reset_url, success=True)
     return render_template('esqueci_senha.html')
 
 @app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
@@ -351,7 +350,6 @@ def editar_cliente(id):
         return redirect(url_for('listar_clientes'))
     return render_template('editar_cliente.html', cliente=cliente)
 
-# --- 🆕 NOVA ROTA: LISTAR PARCELAS DE UM CLIENTE ESPECÍFICO ---
 @app.route('/cliente/<int:id>/parcelas')
 @login_required
 def parcelas_cliente(id):
