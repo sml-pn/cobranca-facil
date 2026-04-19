@@ -3,31 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Cobrança Fácil</title>
+    <title>{% block title %}Cobrança Fácil{% endblock %}</title>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cobrança Fácil">
+    <meta name="theme-color" content="#1e3c72">
+    <link rel="apple-touch-startup-image" href="/static/icons/icon-512.png">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-192.png">
+    <link rel="shortcut icon" href="/static/icons/icon-192.png">
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
         body { background: #f4f7fc; min-height: 100vh; display: flex; flex-direction: column; }
         
-        /* Header */
+        /* Header com logo e botão hambúrguer */
         .header {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             padding: 0.8rem 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: white;
+            padding: 5px;
+        }
         .logo-text {
             font-size: 1.5rem;
             font-weight: 700;
+            color: white;
         }
-
-        /* NOVO HAMBURGUER */
+        
+        /* Hambúrguer animado */
         .hamburger {
             display: none;
             width: 30px;
@@ -37,7 +64,6 @@
             background: none;
             border: none;
         }
-
         .hamburger span {
             position: absolute;
             width: 100%;
@@ -47,91 +73,203 @@
             transition: 0.3s;
             border-radius: 5px;
         }
-
         .hamburger span:nth-child(1) { top: 0; }
         .hamburger span:nth-child(2) { top: 9px; }
         .hamburger span:nth-child(3) { top: 18px; }
-
         .hamburger.active span:nth-child(1) {
             transform: rotate(45deg);
             top: 9px;
         }
-
         .hamburger.active span:nth-child(2) {
             opacity: 0;
         }
-
         .hamburger.active span:nth-child(3) {
             transform: rotate(-45deg);
             top: 9px;
         }
-
-        /* NAV */
+        
+        /* Barra de navegação */
         .nav-bar {
             background: white;
             padding: 0.6rem 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             display: flex;
-            gap: 1rem;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.5rem;
+            border-bottom: 1px solid #e0e7ef;
         }
-
         .nav-bar a {
+            color: #2c3e50;
             text-decoration: none;
-            color: #333;
             font-weight: 500;
+            padding: 0.5rem 0;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-
-        /* MOBILE */
+        .nav-bar a i { width: 1.2rem; color: #2a5298; }
+        .nav-bar a:hover { color: #1e3c72; border-bottom-color: #1e3c72; }
+        
+        /* Menu mobile */
         @media (max-width: 768px) {
             .hamburger { display: block; }
-
+            .logo-text { font-size: 1.2rem; }
             .nav-bar {
                 display: none;
                 flex-direction: column;
+                gap: 0.2rem;
+                padding: 1rem;
             }
-
-            .nav-bar.show {
-                display: flex;
-            }
+            .nav-bar.show { display: flex; }
+            .nav-bar a { padding: 0.8rem; border-bottom: 1px solid #eef2f6; }
+            .nav-bar a:last-child { border-bottom: none; }
         }
-
-        .main-content {
-            padding: 20px;
+        
+        /* Conteúdo principal */
+        .main-content { flex: 1; padding: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .card { background: white; border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 6px 18px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px; }
+        .card-header h2 { font-size: 1.5rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .btn { background: #2a5298; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 40px; font-weight: 600; font-size: 0.95rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 8px rgba(42,82,152,0.2); }
+        .btn:hover { background: #1e3c72; transform: translateY(-1px); }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        .btn-outline { background: transparent; color: #2a5298; box-shadow: none; border: 1.5px solid #2a5298; }
+        .flash { padding: 1rem 1.5rem; border-radius: 50px; margin-bottom: 1.5rem; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+        .flash.success { background: #d4edda; color: #155724; border-left: 6px solid #28a745; }
+        .table-wrapper { overflow-x: auto; margin: 1rem 0; border-radius: 12px; border: 1px solid #edf2f7; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #f8fafc; padding: 1rem; text-align: left; font-weight: 600; color: #1e293b; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 1rem; border-bottom: 1px solid #e2e8f0; color: #334155; }
+        tr:hover td { background: #fafbff; }
+        .footer { text-align: center; padding: 1.5rem; color: #64748b; border-top: 1px solid #e2e8f0; margin-top: auto; }
+        
+        @media (max-width: 600px) {
+            .main-content { padding: 1rem; }
         }
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
-
 <body>
+    <header class="header">
+        <div class="logo-container">
+            <img src="/static/icons/icon-192.png" alt="Logo" class="logo-img">
+            <span class="logo-text">Cobrança Fácil</span>
+        </div>
+        <button class="hamburger" id="hamburgerBtn" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+    
+    <nav class="nav-bar" id="mainNav">
+        <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="{{ url_for('listar_clientes') }}"><i class="fas fa-users"></i> Clientes</a>
+        <a href="{{ url_for('novo_cliente') }}"><i class="fas fa-user-plus"></i> Novo Cliente</a>
+        <a href="{{ url_for('configuracoes') }}"><i class="fas fa-cog"></i> Configurações</a>
+        <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Sair</a>
+    </nav>
 
-<header class="header">
-    <span class="logo-text">Cobrança Fácil</span>
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% else %}info-circle{% endif %}"></i> 
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
 
-    <!-- BOTÃO NOVO -->
-    <button class="hamburger" onclick="toggleMenu(this)">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
-</header>
+    <footer class="footer">
+        <p>&copy; {{ now.year }} Cobrança Fácil – Lembretes inteligentes para seu negócio</p>
+    </footer>
 
-<nav class="nav-bar" id="mainNav">
-    <a href="#">Dashboard</a>
-    <a href="#">Clientes</a>
-    <a href="#">Novo Cliente</a>
-    <a href="#">Configurações</a>
-    <a href="#">Sair</a>
-</nav>
+    <!-- Sistema Inteligente de Instalação do PWA -->
+    <div id="pwa-install-container" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1000; font-family: 'Segoe UI', Roboto, sans-serif;">
+        <button id="pwa-install-button" style="display: none; background: #1e3c72; color: white; border: none; padding: 12px 24px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; cursor: pointer; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2);">
+            ⬇️ Instalar App Cobrança Fácil
+        </button>
+        <div id="ios-install-guide" style="display: none; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 15px 20px; max-width: 260px; border: 1px solid #e0e7ef;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                <span style="font-size: 28px;">📱</span>
+                <span style="font-weight: 700; color: #1e3c72; font-size: 1rem;">Instale o App</span>
+            </div>
+            <p style="font-size: 0.85rem; color: #475569; margin: 0 0 10px 0;">Toque em <strong>Compartilhar</strong> <i class="fas fa-share" style="color: #2a5298;"></i> e depois em:</p>
+            <div style="background: #f8fafc; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <span style="font-size: 20px;">➕</span>
+                <span style="font-weight: 600; color: #1e293b;">Adicionar à Tela de Início</span>
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0;">Use o Safari para ter a melhor experiência.</p>
+        </div>
+    </div>
 
-<div class="main-content">
-    <h1>Seu sistema</h1>
-    <p>Agora com hambúrguer animado 🔥</p>
-</div>
+    <script>
+        // Menu hambúrguer com animação
+        function toggleMenu() {
+            const nav = document.getElementById('mainNav');
+            const btn = document.getElementById('hamburgerBtn');
+            nav.classList.toggle('show');
+            btn.classList.toggle('active');
+        }
 
-<script>
-function toggleMenu(btn) {
-    const nav = document.getElementById('mainNav');
-    nav.classList.toggle('show');
-    btn.classList.toggle('active');
-}
-</script>
+        // PWA Install
+        (function() {
+            let deferredPrompt;
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            const installContainer = document.getElementById('pwa-install-container');
+            const installButton = document.getElementById('pwa-install-button');
+            const iosGuide = document.getElementById('ios-install-guide');
 
-</body
+            if (isStandalone) return;
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (installContainer) {
+                    installContainer.style.display = 'block';
+                    if (installButton) installButton.style.display = 'flex';
+                    if (iosGuide) iosGuide.style.display = 'none';
+                }
+            });
+
+            if (installButton) {
+                installButton.addEventListener('click', async () => {
+                    if (!deferredPrompt) return;
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    installContainer.style.display = 'none';
+                });
+            }
+
+            setTimeout(() => {
+                if (!deferredPrompt && installContainer && !isStandalone) {
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                    if (isIOS) {
+                        if (installButton) installButton.style.display = 'none';
+                        if (iosGuide) iosGuide.style.display = 'block';
+                        installContainer.style.display = 'block';
+                    }
+                }
+            }, 3000);
+        })();
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('SW registrado'))
+                    .catch(err => console.error('Erro SW:', err));
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
