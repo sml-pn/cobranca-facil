@@ -1,6 +1,6 @@
 # 🚗 Cobrança Fácil
 
-Sistema inteligente de cobrança e gestão de parcelas para lojistas e prestadores de serviços. Gerencia clientes, calcula parcelas automaticamente, exibe um dashboard financeiro e envia **lembretes automáticos em três estágios** via WhatsApp (5 dias antes, 1 dia antes e no dia do vencimento).
+Sistema inteligente de cobrança e gestão de parcelas para lojistas e prestadores de serviços. Gerencia clientes, calcula parcelas automaticamente, exibe um dashboard financeiro e oferece **notificações PWA nativas** e **links diretos para WhatsApp** com mensagens prontas.
 
 **💰 Monetização:** Ideal para venda como SaaS (assinatura mensal), white-label ou sistema exclusivo para um cliente.
 
@@ -12,33 +12,43 @@ Sistema inteligente de cobrança e gestão de parcelas para lojistas e prestador
 - Cadastro completo: nome, telefone, veículo, valor total, quantidade de parcelas e dia de vencimento.
 - Cálculo automático das parcelas com base no dia fixo escolhido.
 - Edição de dados do cliente.
+- **Exclusão segura** de clientes com confirmação.
 
 ### 📊 Dashboard Profissional
 - Cards de resumo: **Vencidas**, **Vence Hoje**, **Esta Semana**, **Total a Receber**.
 - Lista de **próximas parcelas** de cada cliente (apenas a parcela mais urgente).
 - Filtros por status e ordenação por data, nome ou valor.
-- Interface 100% responsiva (mobile e desktop).
+- Visualização detalhada de todas as parcelas de um cliente.
+- Interface 100% responsiva com **menu hambúrguer animado** para dispositivos móveis.
 
-### 💬 Lembretes Automáticos via WhatsApp
-- Envio **automático** de mensagens para os clientes em **três momentos**:
-  - **5 dias antes** do vencimento (lembrete amigável).
-  - **1 dia antes** do vencimento (alerta de urgência).
-  - **No dia do vencimento** (cobrança direta).
-- Utiliza a API gratuita [CallMeBot](https://www.callmebot.com/).
+### 💬 Integração com WhatsApp
+- Botão em cada parcela que abre o WhatsApp com uma **mensagem personalizada pronta** (sem necessidade de salvar contato).
+- A mensagem inclui dados do cliente, parcela, valor e vencimento com texto amigável ("hoje", "amanhã", "em X dias").
+
+### 🔔 Notificações PWA (Progressive Web App)
+- O sistema envia **notificações nativas** no dispositivo (Android, Windows, macOS) nos seguintes momentos:
+  - 5 dias antes do vencimento
+  - 1 dia antes do vencimento
+  - No dia do vencimento
+  - Para parcelas vencidas
+- Cada notificação possui ações: **"Já Paguei"** (marca como paga diretamente) e **"WhatsApp"** (abre conversa pronta).
 
 ### 🔐 Autenticação e Segurança
 - Tela de login com proteção de rotas.
-- Recuperação de senha via **link enviado por WhatsApp**.
-- Senha armazenada com hash SHA-256.
+- Recuperação de senha segura via **código OTP de 6 dígitos enviado por WhatsApp** (verificação em duas etapas).
+- Senhas armazenadas com **hash seguro (werkzeug)**.
+- Proteção contra **CSRF** em todos os formulários sensíveis.
+- Logout seguro.
 
 ### 📱 PWA (Progressive Web App)
-- Instalável como aplicativo no celular e computador.
+- Instalável como aplicativo no celular e computador (Android, iOS, Windows, macOS).
 - Ícone personalizado e tela de splash.
 - Service Worker para funcionamento offline básico e cache.
+- Botão inteligente de instalação que detecta automaticamente o dispositivo.
 
 ### ⚙️ Deploy e Monitoramento
 - Hospedagem gratuita no **Render**.
-- Banco de dados PostgreSQL gratuito no **Neon**.
+- Banco de dados PostgreSQL gratuito no **Neon** (5 GB).
 - **cron-job.org** configurado para pingar o serviço e evitar hibernação.
 - Retentativas automáticas de conexão com o banco de dados.
 
@@ -51,10 +61,9 @@ Sistema inteligente de cobrança e gestão de parcelas para lojistas e prestador
 | Backend | Python 3 + Flask | Lógica do servidor e rotas |
 | Banco de Dados | Neon (PostgreSQL) | Armazenamento na nuvem (5 GB grátis) |
 | Hospedagem | Render | Servidor web gratuito |
-| Mensagens | CallMeBot | API gratuita para WhatsApp |
-| Monitoramento | cron-job.org | Pings para manter o Render ativo |
+| Notificações | Service Worker + Web Push | Alertas nativos no dispositivo |
 | Versionamento | Git + GitHub | Controle de versão e deploy automático |
-| Frontend | HTML, CSS, Jinja2 | Interface responsiva |
+| Frontend | HTML, CSS, Jinja2 | Interface responsiva e moderna |
 
 ---
 
@@ -63,23 +72,29 @@ Sistema inteligente de cobrança e gestão de parcelas para lojistas e prestador
 ```
 
 cobranca-facil/
-├── app.py                 # Código principal do Flask
-├── requirements.txt       # Dependências Python
-├── runtime.txt            # Versão do Python para o Render
-├── Procfile               # Comando de inicialização
+├── app.py                     # Código principal do Flask
+├── requirements.txt           # Dependências Python
+├── runtime.txt                # Versão do Python para o Render
+├── Procfile                   # Comando de inicialização
 ├── static/
-│   ├── manifest.json      # Configuração do PWA
-│   ├── sw.js              # Service Worker
-│   └── icons/             # Ícones do app
+│   ├── manifest.json          # Configuração do PWA
+│   ├── sw.js                  # Service Worker (cache + notificações)
+│   ├── android-icon-.png     # Ícones do app (vários tamanhos)
+│   ├── apple-icon-.png       # Ícones para iOS
+│   ├── favicon-*.png/ico      # Favicons
+│   └── browserconfig.xml
 └── templates/
-├── base.html          # Layout padrão
-├── index.html         # Dashboard
-├── clientes.html      # Lista de clientes
-├── novo_cliente.html  # Cadastro
-├── editar_cliente.html
-├── login.html
-├── esqueci_senha.html
-└── redefinir_senha.html
+├── base.html              # Layout padrão (com menu hambúrguer)
+├── index.html             # Dashboard com cards
+├── clientes.html          # Lista de clientes (com excluir)
+├── novo_cliente.html      # Cadastro
+├── editar_cliente.html    # Edição
+├── parcelas_cliente.html  # Histórico de parcelas
+├── login.html             # Tela de login
+├── esqueci_senha.html     # Solicitar código OTP
+├── validar_codigo.html    # Validar código OTP
+├── redefinir_senha_otp.html # Nova senha após validação
+└── configuracoes.html     # Configurações de Pix (com máscaras)
 
 ```
 
@@ -95,7 +110,6 @@ Crie contas gratuitas nos seguintes serviços:
 | GitHub | [github.com](https://github.com) | Armazenar o código |
 | Neon | [neon.tech](https://neon.tech) | Banco de dados PostgreSQL |
 | Render | [render.com](https://render.com) | Hospedagem |
-| CallMeBot | [callmebot.com](https://www.callmebot.com/blog/free-api-whatsapp-messages/) | API do WhatsApp |
 | cron-job.org | [cron-job.org](https://cron-job.org) | Ping para evitar hibernação |
 
 ### 2. Configuração do Banco de Dados (Neon)
@@ -103,12 +117,7 @@ Crie contas gratuitas nos seguintes serviços:
 2. Copie a **Connection String** (formato `postgresql://...`).
 3. Ela será usada como variável `DATABASE_URL` no Render.
 
-### 3. Configuração do CallMeBot
-1. Adicione o número `+34 644 71 81 99` aos seus contatos.
-2. Envie a mensagem `I allow callmebot to send me messages` por WhatsApp.
-3. Guarde a **API Key** recebida.
-
-### 4. Deploy no Render
+### 3. Deploy no Render
 1. Faça um fork ou clone deste repositório no GitHub.
 2. No Render, crie um novo **Web Service** conectado ao repositório.
 3. Configure:
@@ -118,11 +127,9 @@ Crie contas gratuitas nos seguintes serviços:
 4. Adicione as **variáveis de ambiente**:
    - `DATABASE_URL`: string de conexão do Neon.
    - `SECRET_KEY`: uma chave secreta (gere uma aleatória).
-   - `CALLMEBOT_API_KEY`: sua API Key.
-   - `CALLMEBOT_PHONE_NUMBER`: seu número com código do país (ex: `5511999999999`).
 5. Clique em **Create Web Service**.
 
-### 5. Manter o Render Ativo (cron-job.org)
+### 4. Manter o Render Ativo (cron-job.org)
 1. Crie um cron job no cron-job.org.
 2. URL: `https://seu-app.onrender.com/ping`
 3. Intervalo: a cada **10 minutos**.
@@ -138,7 +145,6 @@ Cada cliente precisará de contas próprias (ou você gerencia para ele):
 - **GitHub**: para clonar o repositório.
 - **Neon**: para o banco de dados.
 - **Render**: para a hospedagem.
-- **CallMeBot**: para o envio de WhatsApp (usando o número do cliente).
 - **cron-job.org**: para o ping.
 
 ### 3.2. Configuração do Ambiente
@@ -148,7 +154,7 @@ Cada cliente precisará de contas próprias (ou você gerencia para ele):
 4. Após o deploy, o cliente acessa `https://[nome-do-cliente].onrender.com`.
 
 ### 3.3. Personalização (Opcional)
-- Substitua os ícones em `static/icons/`.
+- Substitua os ícones em `static/`.
 - Altere as cores no `base.html`.
 - Modifique o título e o nome do sistema.
 
@@ -160,8 +166,9 @@ Cada cliente precisará de contas próprias (ou você gerencia para ele):
    - **Usuário:** `admin`
    - **Senha:** `admin123`
 2. Cadastre um cliente com vencimento para **hoje + 5 dias**.
-3. Aguarde o agendador diário (às 5h da manhã) ou force via rota `/forcar-lembretes` (se adicionada temporariamente).
-4. Verifique se as mensagens de WhatsApp chegam nos momentos corretos.
+3. Permita notificações no navegador.
+4. Aguarde as notificações automáticas (a cada 30 minutos) ou clique no botão **WhatsApp** para abrir uma conversa pronta.
+5. Marque parcelas como pagas e veja o dashboard atualizar.
 
 ---
 
@@ -177,9 +184,9 @@ Cada cliente precisará de contas próprias (ou você gerencia para ele):
 
 ## 📝 Personalizações Possíveis
 
-- Texto das mensagens de WhatsApp (função `enviar_whatsapp_direto`).
-- Prazos dos lembretes (parâmetros `days=5`, `days=1`, `days=0`).
-- Cores e logo (CSS e ícones).
+- Texto das mensagens de WhatsApp (no `index.html` e `app.py`).
+- Prazos das notificações (parâmetros na função `verificar_lembretes`).
+- Cores e logo (CSS no `base.html` e ícones em `static/`).
 - Adicionar novos relatórios (PDF/Excel).
 
 ---
@@ -200,6 +207,3 @@ Este projeto é open-source para fins educacionais. Para uso comercial, entre em
 
 **Feito com ❤️ usando apenas ferramentas gratuitas.**
 ```
-
----
-
